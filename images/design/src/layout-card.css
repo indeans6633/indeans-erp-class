@@ -1,0 +1,63 @@
+/* 구조: 카드·상세형 — 카드 목록 + 상세 패널 */
+
+.shell { display: grid; grid-template-rows: auto minmax(0, 1fr); min-height: 0; }
+
+.tabs {
+  display: flex; gap: var(--sp-4); padding: 0 var(--sp-5);
+  background: var(--surface); border-bottom: 1px solid var(--border);
+}
+.tabs a {
+  display: flex; align-items: center; min-height: var(--tap);
+  color: var(--text-2); text-decoration: none;
+  font-size: var(--fs-label); font-weight: var(--fw-medium);
+  border-bottom: 2px solid transparent; margin-bottom: -1px;
+}
+.tabs a[aria-current="page"] { color: var(--primary); border-bottom-color: var(--primary); }
+
+.main { padding: var(--sp-5) var(--sp-5) var(--sp-6); display: flex; flex-direction: column; gap: var(--sp-4); align-content: start; }
+
+/* 두 칸 모두 minmax(0, ...) 로 시작한다 */
+.split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 420px); gap: var(--sp-4); align-items: start; }
+
+.cards { display: grid; gap: var(--sp-2); }
+.card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: var(--sp-2) var(--sp-4); display: grid; gap: var(--sp-1); min-height: var(--tap);
+}
+.card[aria-selected="true"] { border-color: var(--primary); background: var(--primary-soft); }
+.card .line1 { display: flex; align-items: baseline; gap: var(--sp-3); }
+.card .no { font-size: var(--fs-meta); color: var(--text-3); }
+.card .name { font-weight: var(--fw-medium); }
+.card .line2 { display: flex; align-items: center; gap: var(--sp-4); font-size: var(--fs-label); color: var(--text-2); }
+.card .line2 .got { margin-left: auto; font-size: var(--fs-meta); }
+.card .line2 .due { font-size: var(--fs-meta); }
+
+.detail {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: var(--sp-4); display: flex; flex-direction: column; gap: var(--sp-3);
+}
+.detail-head { display: flex; flex-direction: column; gap: var(--sp-1); }
+.detail-head .name { font-size: var(--fs-title); font-weight: var(--fw-bold); line-height: var(--lh-tight); }
+.detail-head .no { font-size: var(--fs-meta); color: var(--text-3); }
+
+.rows { display: grid; gap: 0; border-top: 1px solid var(--border); }
+.row {
+  display: grid; grid-template-columns: minmax(0, 88px) minmax(0, 1fr);
+  gap: var(--sp-3); align-items: baseline;
+  padding: var(--sp-2) 0; border-bottom: 1px solid var(--border);
+}
+.row .k { font-size: var(--fs-label); color: var(--text-2); }
+.row .v { overflow-wrap: anywhere; }
+
+/* 단계 줄 — 지금 어디인지 글자로만 표시한다 */
+.steps { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); font-size: var(--fs-label); color: var(--text-3); }
+.steps .step { padding: var(--sp-1) var(--sp-2); border: 1px solid var(--border); border-radius: var(--radius-sm); }
+.steps .step[aria-current="step"] { color: var(--primary); border-color: var(--primary); background: var(--primary-soft); font-weight: var(--fw-medium); }
+.steps .sep { color: var(--text-3); }
+
+/* 좁은 화면(태블릿 세로·폰) — 상세 패널을 카드 목록 아래로 내린다(겹침 방지) */
+@media (max-width: 900px) {
+  .split { grid-template-columns: minmax(0, 1fr); }
+}

@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>○○상사 — 목록·표형 · 진회색(차콜)</title>
+<!-- 색·간격 값은 토큰 파일 하나에서만 온다. 구조는 layout-list.css, 공통 바탕은 base.css -->
+<link rel="stylesheet" href="../tokens/list-charcoal.css">
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="layout-list.css">
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand"><span class="name">○○상사</span><span class="kind">업무 관리</span></div>
+    <div class="who">
+      <span class="me">김○○ 대표</span>
+      <button class="btn btn-primary" type="button">건 등록</button>
+    </div>
+  </header>
+  <div class="shell">
+    <nav class="side">
+      <a href="#" aria-current="page">건 목록</a>
+      <a href="#">오늘 할 일</a>
+      <a href="#">기준 정보</a>
+    </nav>
+    <main class="main">
+        <div class="head">
+          <h1>진행 중인 건</h1>
+          <span class="count">6건</span>
+          <span class="today">오늘 09-18</span>
+        </div>
+      <section class="panel table">
+        <div class="thead">
+          <span>번호</span><span>건 이름</span><span>담당</span><span>단계</span><span>받은 날</span><span>마감일</span>
+        </div>
+        <div class="trow">
+          <span class="num ellip">24-101</span>
+          <span class="name ellip">봄 정기 주문</span>
+          <span class="ellip">김○○</span>
+          <span class="stage">접수</span>
+          <span class="date num d-in">09-14</span>
+          <span class="date num d-due">09-20</span>
+        </div>
+        <div class="trow" aria-selected="true">
+          <span class="num ellip">24-102</span>
+          <span class="name ellip">매장 납품 건</span>
+          <span class="ellip">이○○</span>
+          <span class="stage">진행</span>
+          <span class="date num d-in">09-13</span>
+          <span class="date num d-due">09-19</span>
+        </div>
+        <div class="trow">
+          <span class="num ellip">24-103</span>
+          <span class="name ellip">추가 물량 요청</span>
+          <span class="ellip">김○○</span>
+          <span class="stage">진행</span>
+          <span class="date num d-in">09-12</span>
+          <span class="date num d-due">09-18</span>
+        </div>
+        <div class="trow">
+          <span class="num ellip">24-104</span>
+          <span class="name ellip">재고 보충</span>
+          <span class="ellip">박○○</span>
+          <span class="stage">확인</span>
+          <span class="date num d-in">09-11</span>
+          <span class="date num d-due">09-18</span>
+        </div>
+        <div class="trow">
+          <span class="num ellip">24-105</span>
+          <span class="name ellip">견본 발송</span>
+          <span class="ellip">이○○</span>
+          <span class="stage">확인</span>
+          <span class="date num d-in">09-10</span>
+          <span class="date num d-due">09-17</span>
+        </div>
+        <div class="trow">
+          <span class="num ellip">24-106</span>
+          <span class="name ellip">월말 마감 정리</span>
+          <span class="ellip">박○○</span>
+          <span class="stage stage-done">완료</span>
+          <span class="date num d-in">09-08</span>
+          <span class="date num d-due">09-15</span>
+        </div>
+      </section>
+      <h2 class="sums-h">오늘 볼 것</h2>
+      <section class="sums">
+        <div class="sum">
+          <span class="k">오늘 마감</span>
+          <span class="v num">2건</span>
+          <span class="d">24-103 추가 물량 요청 · 24-104 재고 보충</span>
+        </div>
+        <div class="sum">
+          <span class="k">확인 기다리는 건</span>
+          <span class="v num">2건</span>
+          <span class="d">24-104 재고 보충 · 24-105 견본 발송</span>
+        </div>
+        <div class="sum">
+          <span class="k">이번 주 완료</span>
+          <span class="v num">1건</span>
+          <span class="d">24-106 월말 마감 정리</span>
+        </div>
+      </section>
+      <p class="note">예시 데이터입니다. 실제 화면에는 회사에서 쓰는 말과 항목이 들어갑니다.</p>
+    </main>
+  </div>
+</div>
+</body>
+</html>

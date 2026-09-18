@@ -1,0 +1,49 @@
+/* 구조: 진행 보드형 — 상단 탭 + 단계 열 */
+
+.shell { display: grid; grid-template-rows: auto minmax(0, 1fr); min-height: 0; }
+
+.tabs {
+  display: flex; gap: var(--sp-4); padding: 0 var(--sp-5);
+  background: var(--surface); border-bottom: 1px solid var(--border);
+}
+.tabs a {
+  display: flex; align-items: center; min-height: var(--tap);
+  color: var(--text-2); text-decoration: none;
+  font-size: var(--fs-label); font-weight: var(--fw-medium);
+  border-bottom: 2px solid transparent; margin-bottom: -1px;
+}
+.tabs a[aria-current="page"] { color: var(--primary); border-bottom-color: var(--primary); }
+
+.main { padding: var(--sp-5) var(--sp-5) var(--sp-6); display: flex; flex-direction: column; gap: var(--sp-4); align-content: start; }
+
+/* 열 폭은 반드시 minmax(0, ...) 로 시작한다 */
+.board { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--sp-3); align-items: start; }
+
+.column {
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: var(--sp-3); display: flex; flex-direction: column; gap: var(--sp-2);
+}
+/* 단계마다 다른 색을 쓰지 않는다 — 단계는 위치로 구분한다 */
+.column-head {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2);
+  padding: 0 var(--sp-1) var(--sp-1);
+  font-size: var(--fs-label); font-weight: var(--fw-medium); color: var(--text-2);
+}
+.column-head .n { color: var(--text-3); }
+
+.card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  box-shadow: var(--shadow);
+  padding: var(--sp-3); display: grid; gap: var(--sp-1); min-height: var(--tap);
+}
+.card[aria-selected="true"] { border-color: var(--primary); background: var(--primary-soft); }
+.card .no { font-size: var(--fs-meta); color: var(--text-3); }
+.card .name { font-weight: var(--fw-medium); line-height: var(--lh-tight); }
+.card .owner { font-size: var(--fs-label); color: var(--text-2); }
+.card .meta { display: flex; gap: var(--sp-3); font-size: var(--fs-meta); color: var(--text-3); }
+.column .empty { padding: var(--sp-4) 0; text-align: center; font-size: var(--fs-meta); color: var(--text-3); }
+
+/* 좁은 화면(폰) — 단계 열을 위에서 아래로 쌓는다 */
+@media (max-width: 680px) {
+  .board { grid-template-columns: minmax(0, 1fr); }
+}

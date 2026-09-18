@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .owner/hooks/erp-check.mjs --tool claude",
+            "timeout": 60,
+            "statusMessage": "검수가 필요한 변경인지 확인"
+          }
+        ]
+      }
+    ]
+  }
+}

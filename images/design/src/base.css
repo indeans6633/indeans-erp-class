@@ -1,0 +1,90 @@
+/* 인디언즈 ERP 클래스 — 디자인 비교 목업 공통 바탕
+   색·간격·글자 값은 ../tokens/<구조>-<컬러>.css 에서 온다. 여기에 값을 직접 쓰지 않는다. */
+
+*, *::before, *::after { box-sizing: border-box; }
+* { min-width: 0; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  font-weight: var(--fw-normal);
+  -webkit-text-size-adjust: 100%;
+}
+
+.app { display: grid; grid-template-rows: auto minmax(0, 1fr); min-height: 100vh; }
+
+/* 상단 바 */
+.top {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--sp-4);
+  min-height: 52px; padding: 0 var(--sp-5);
+  background: var(--surface); border-bottom: 1px solid var(--border);
+}
+.brand { display: flex; align-items: baseline; gap: var(--sp-3); }
+.brand .name { font-size: var(--fs-title); font-weight: var(--fw-bold); letter-spacing: -0.01em; }
+.brand .kind { font-size: var(--fs-meta); color: var(--text-3); }
+.who { display: flex; align-items: center; gap: var(--sp-4); }
+.who .me { font-size: var(--fs-label); color: var(--text-2); }
+
+/* 화면 제목 줄 */
+.head { display: flex; align-items: baseline; gap: var(--sp-3); }
+.head h1 { margin: 0; font-size: var(--fs-title); font-weight: var(--fw-bold); line-height: var(--lh-tight); }
+.head .count { font-size: var(--fs-label); color: var(--text-2); font-family: var(--font-num); font-variant-numeric: tabular-nums; }
+.head .today { margin-left: auto; font-size: var(--fs-meta); color: var(--text-3); }
+
+/* 버튼 */
+.btn {
+  min-height: var(--tap); padding: 0 var(--sp-4);
+  border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+  background: var(--surface); color: var(--text);
+  font: inherit; font-size: var(--fs-label); font-weight: var(--fw-medium); cursor: pointer;
+}
+.btn-primary { background: var(--primary); border-color: var(--primary); color: var(--primary-on); }
+.btn:hover { border-color: var(--border-strong); }
+.btn-primary:hover { background: var(--primary-hover); border-color: var(--primary-hover); }
+
+/* 단계 표시 — 색 막대가 아니라 점과 글자로 */
+.stage { display: inline-flex; align-items: center; gap: var(--sp-1); font-size: var(--fs-label); color: var(--text-2); }
+.stage::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex: none; }
+.stage-done { color: var(--text-3); }
+
+/* 오늘 볼 것 — 세 칸 요약 (구조 3종 공통) */
+.sums-h { margin: 0; font-size: var(--fs-label); font-weight: var(--fw-medium); color: var(--text-2); }
+.sums { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-3); }
+.sum {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: var(--sp-3) var(--sp-4); display: grid; gap: 2px;
+}
+.sum .k { font-size: var(--fs-label); color: var(--text-2); }
+.sum .v { font-size: var(--fs-title); font-weight: var(--fw-bold); line-height: var(--lh-tight); }
+.sum .d { font-size: var(--fs-meta); color: var(--text-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.num { font-family: var(--font-num); font-variant-numeric: tabular-nums; }
+.ellip { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.note { margin: 0; font-size: var(--fs-meta); color: var(--text-3); }
+
+/* 폼 기본 — 목업에는 입력 칸이 없지만 앱으로 옮길 때 기준이 된다 */
+input, select, textarea {
+  font: inherit;
+  min-height: var(--tap);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+}
+/* 손가락으로 쓰는 기기에서 16px 미만이면 입력할 때 화면이 확대된다 */
+@media (hover: none) and (pointer: coarse) {
+  input:not([type=checkbox]):not([type=radio]), select, textarea { font-size: 16px; }
+}
+
+/* 좁은 화면(폰) — 요약은 한 줄에 하나, 상단 바는 두 줄까지 접힌다 */
+@media (max-width: 680px) {
+  .sums { grid-template-columns: minmax(0, 1fr); }
+  .top { flex-wrap: wrap; padding: var(--sp-2) var(--sp-3); }
+}
+/* 손가락으로 누르는 기기에서는 누르는 곳을 더 크게 */
+@media (pointer: coarse) {
+  :root { --tap: 44px; }
+}

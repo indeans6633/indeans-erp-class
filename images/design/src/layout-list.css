@@ -1,0 +1,52 @@
+/* 구조: 목록·표형 — 좌측 메뉴 + 표 */
+
+.shell { display: grid; grid-template-columns: minmax(0, 188px) minmax(0, 1fr); min-height: 0; }
+
+.side {
+  background: var(--surface); border-right: 1px solid var(--border);
+  padding: var(--sp-4) var(--sp-3); display: flex; flex-direction: column; gap: var(--sp-1);
+}
+.side a {
+  display: flex; align-items: center; min-height: var(--tap);
+  padding: 0 var(--sp-3); border-radius: var(--radius-sm);
+  color: var(--text-2); text-decoration: none; font-size: var(--fs-label); font-weight: var(--fw-medium);
+}
+.side a[aria-current="page"] { background: var(--primary-soft); color: var(--primary); }
+
+.main { padding: var(--sp-5) var(--sp-5) var(--sp-6); display: flex; flex-direction: column; gap: var(--sp-4); align-content: start; }
+
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+
+/* 열 폭은 반드시 minmax(0, ...) 로 시작한다 — 빠뜨리면 내용이 긴 건에서 화면이 옆으로 밀린다 */
+.table { --cols: minmax(0, 88px) minmax(0, 2fr) minmax(0, 92px) minmax(0, 104px) minmax(0, 92px) minmax(0, 92px); }
+.thead, .trow {
+  display: grid; grid-template-columns: var(--cols);
+  gap: var(--sp-3); align-items: center; padding: 0 var(--sp-4);
+}
+.thead {
+  min-height: 36px; background: var(--surface-2);
+  border-bottom: 1px solid var(--border-strong);
+  font-size: var(--fs-label); font-weight: var(--fw-medium); color: var(--text-2);
+}
+.thead > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.trow { min-height: var(--row-h); border-bottom: 1px solid var(--border); }
+.trow:last-child { border-bottom: 0; }
+.trow[aria-selected="true"] { background: var(--primary-soft); }
+.trow .name { font-weight: var(--fw-medium); }
+.date { font-size: var(--fs-meta); color: var(--text-3); }
+
+/* 좁은 화면(폰) — 좌측 메뉴는 위로, 표 머리줄은 감추고 한 건을 두 칸으로 접는다 */
+@media (max-width: 680px) {
+  .shell { grid-template-columns: minmax(0, 1fr); }
+  .side {
+    flex-direction: row; overflow-x: auto;
+    border-right: 0; border-bottom: 1px solid var(--border);
+  }
+  .thead { display: none; }
+  .trow { grid-template-columns: minmax(0, 1fr) auto; row-gap: 2px; }
+  /* 머리줄을 감췄으니 날짜에 라벨을 붙인다 — 한글 라벨은 모노스페이스 밖의 서체로 */
+  .trow .d-in::before, .trow .d-due::before { font-family: var(--font-sans); color: var(--text-3); }
+  .trow .d-in::before { content: "받은 날 "; }
+  .trow .d-due::before { content: "마감 "; }
+  .main { padding: var(--sp-4) var(--sp-3); }
+}

@@ -1,0 +1,42 @@
+{
+  "bundle_version": "2.0.0",
+  "updated_at": null,
+  "updated_by": null,
+  "company": {
+    "name": null,
+    "owner_label": null,
+    "industry": null,
+    "unit": null,
+    "first_flow": null
+  },
+  "design": {
+    "structure": null,
+    "color": null,
+    "tokens": null
+  },
+  "app": {
+    "draft_done": false,
+    "dev_url": null,
+    "deploy_url": null,
+    "supabase_connected": false,
+    "backup_documented": false,
+    "roles": []
+  },
+  "channel": {
+    "discord": false,
+    "telegram": false
+  },
+  "digest": {
+    "scheduled": false,
+    "first_received": false
+  },
+  "sessions": {
+    "1": { "outcome": "핵심 업무 흐름 1개를 눌러 볼 수 있는 초안 + 첫 작업 보고서", "done": false },
+    "2": { "outcome": "직원 계정으로 입력하고 다시 접속해도 저장된 내용이 보이는 앱", "done": false },
+    "3": { "outcome": "선택한 채널에서 운영 보고를 실제로 수신", "done": false },
+    "4": { "outcome": "검수·복구를 직접 확인하고 실사용 준비 완료", "done": false },
+    "final": { "outcome": "2주 사용 결과 + 다음 개선 순서", "done": false }
+  },
+  "open_problems": [],
+  "next_action": "indeans-erp-setup 스킬로 시작 점검"
+}

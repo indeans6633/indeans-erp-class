@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>디자인 고르기 — 구조 3가지 · 색 4가지</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  * { min-width: 0; }
+  :root {
+    --bg: #F5F5F4; --surface: #FFFFFF; --border: #DCDCDA; --border-strong: #C2C2BF;
+    --text: #17181A; --text-2: #56585C; --text-3: #65686C;
+    --font-sans: system-ui, -apple-system, "Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+  }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font-sans); font-size: 14px; line-height: 1.6; }
+  .page { max-width: 1240px; margin: 0 auto; padding: 24px 16px 48px; display: flex; flex-direction: column; gap: 24px; }
+  header h1 { margin: 0 0 6px; font-size: 20px; font-weight: 700; line-height: 1.35; }
+  header p { margin: 0; font-size: 13px; color: var(--text-2); }
+  header ol { margin: 10px 0 0; padding-left: 18px; font-size: 13px; color: var(--text-2); }
+  header li { margin-bottom: 2px; }
+  .row { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+  .row-head h2 { margin: 0; font-size: 16px; font-weight: 600; display: flex; align-items: baseline; gap: 8px; }
+  .row-head .n { width: 20px; height: 20px; flex: none; display: inline-flex; align-items: center; justify-content: center;
+    border: 1px solid var(--border-strong); border-radius: 50%; font-size: 12px; color: var(--text-2); }
+  .row-head .sub { margin: 2px 0 0 28px; font-size: 12px; color: var(--text-3); }
+  .row-head .fit { margin: 4px 0 0 28px; font-size: 13px; color: var(--text-2); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr)); gap: 12px; }
+  figure { margin: 0; display: flex; flex-direction: column; gap: 6px; }
+  figure a { display: block; border: 1px solid var(--border); border-radius: 4px; overflow: hidden; background: var(--surface); }
+  figure a:hover { border-color: var(--border-strong); }
+  figure img { display: block; width: 100%; height: auto; }
+  figcaption { display: flex; flex-direction: column; gap: 2px; }
+  .label { font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+  /* 강조색 견본 — 어느 색을 고르는지 보여 주는 비교 대상이다(장식 아님) */
+  .sw { width: 14px; height: 14px; flex: none; }
+  .sw-list-navy { background: #1F3A68; }
+  .sw-list-charcoal { background: #33363B; }
+  .sw-list-green { background: #1F5B3E; }
+  .sw-list-brown { background: #6B4A2E; }
+  .sw-board-navy { background: #1F3A68; }
+  .sw-board-charcoal { background: #33363B; }
+  .sw-board-green { background: #1F5B3E; }
+  .sw-board-brown { background: #6B4A2E; }
+  .sw-card-navy { background: #1F3A68; }
+  .sw-card-charcoal { background: #33363B; }
+  .sw-card-green { background: #1F5B3E; }
+  .sw-card-brown { background: #6B4A2E; }
+  .say { font-size: 12px; color: var(--text-2); }
+  .file { font-size: 11px; color: var(--text-3); font-family: ui-monospace, Consolas, monospace; }
+  footer { font-size: 12px; color: var(--text-3); }
+  @media print { body { background: #FFFFFF; } .row { break-inside: avoid; } }
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <h1>디자인 고르기 — 구조 3가지 · 색 4가지</h1>
+    <p>12장 모두 같은 회사(○○상사)·같은 예시 데이터·같은 문구로 그렸습니다. 달라진 것은 화면 구조와 색뿐입니다.</p>
+    <ol>
+      <li>먼저 <strong>줄(구조)</strong>을 하나 고릅니다. 회사 일이 어떻게 보여야 편한지로 고르시면 됩니다.</li>
+      <li>고른 줄에서 <strong>색</strong> 4가지를 비교해 하나 고릅니다. 이름 앞의 작은 사각형이 그 색의 강조색입니다.</li>
+      <li>그림을 누르면 원래 크기로 크게 볼 수 있습니다.</li>
+    </ol>
+  </header>
+  <section class="row">
+    <div class="row-head">
+      <h2><span class="n">1</span>목록·표형</h2>
+      <p class="sub">좌측 메뉴 + 표</p>
+      <p class="fit">건이 많아 표로 훑는 회사에 맞는다. 검색·정렬·한눈에 세기가 중심일 때.</p>
+    </div>
+    <div class="grid">
+      <figure>
+        <a href="list-navy.png" target="_blank" rel="noopener">
+          <img src="list-navy.png" width="1280" height="610" alt="목록·표형 · 남색 화면 예시" loading="lazy">
+        </a>
+        <figcaption>
+          <span class="label"><span class="sw sw-list-navy" aria-hidden="true"></span>목록·표형 · 남색</span>
+          <span class="say">건이 많고 표로 훑는 회사 — 남색은 차분하고 격식 있는 인상. 숫자가 또렷하게 읽힌다.</span>
+          <span class="file">list-navy</span>
+        </figcaption>
+      </figure>
+      <figure>
+        <a href="list-charcoal.png" target="_blank" rel="noopener">
+          <img src="list-charcoal.png" width="1280" height="610" alt="목록·표형 · 진회색(차콜) 화면 예시" loading="lazy">
+        </a>
+        <figcaption>
+          <span class="label"><span class="sw sw-list-charcoal" aria-hidden="true"></span>목록·표형 · 진회색(차콜)</span>
+          <span class="say">건이 많고 표로 훑는 회사 — 진회색은 색을 거의 쓰지 않은 담백한 인상. 글자와 숫자가 앞에 선다.</span>
+          <span class="file">list-charcoal</span>
+        </figcaption>
+      </figure>
+      <figure>
+        <a href="list-green.png" target="_blank" rel="noopener">
+          <img src="list-green.png" width="1280" height="610" alt="목록·표형 · 녹색 화면 예시" loading="lazy">
+        </a>
+        <figcaption>
+          <span class="label"><span class="sw sw-list-green" aria-hidden="true"></span>목록·표형 · 녹색</span>
+          <span class="say">건이 많고 표로 훑는 회사 — 녹색은 부드럽고 정돈된 인상. 표가 조금 편안해 보인다.</span>
+          <span class="file">list-green</span>
+        </figcaption>
+      </figure>
+      <figure>
+        <a href="list-brown.png" target="_blank" rel="noopener">
+          <img src="list-brown.png" width="1280" height="610" alt="목록·표형 · 갈색 화면 예시" loading="lazy">
+        </a>
+        <figcaption>
+          <span class="label"><span class="sw sw-list-brown" aria-hidden="true"></span>목록·표형 · 갈색</span>
+          <span class="say">건이 많고 표로 훑는 회사 — 갈색은 따뜻하고 순한 인상. 표가 딱딱해 보이지 않는다.</span>
+          <span class="file">list-brown</span>
+        </figcaption>
+      </figure>
+    </div>
+  </section>
+  <section class="row">
+    <div class="row-head">
+      <h2><span class="n">2</span>진행 보드형</h2>
+      <p class="sub">상단 탭 + 단계 열</p>
+      <p class="fit">지금 어느 단계까지 왔는지가 중요한 회사에 맞는다. 단계별로 밀어 가는 일.</p>
+    </div>
+    <div class="grid">
+      <figure>
+        <a href="board-navy.png" target="_blank" rel="noopener">
+          <img src="board-navy.png" width="1280" height="668" alt="진행 보드형 · 남색 화면 예시" loading="lazy">
+        </a>
+        <figcaption>
+          <span class="label"><span class="sw sw-board-navy" aria-hidden="true"></span>진행 보드형 · 남색</span>
+          <span class="say">단계별로 밀어 가는 일 — 남색은 차분하고 격식 있는 인상. 회의 화면에 어울린다.</span>
+          <span class="file">board-navy</span>
+        </figcaption>
+      </figure>
+      <figure>
+        <a href="board-charcoal.png" target="_blank" rel="noopener">
+          <img src="board-charcoal.png" width="1280" height="668" alt="진행 보드형 · 진회색(차콜) 화면 예시" loading="lazy">
+        </a>
+        <figcaption>
+          <span class="label"><span class="sw sw-board-charcoal" aria-hidden="true"></span>진행 보드형 · 진회색(차콜)</span>
+          <span class="say">단계별로 밀어 가는 일 — 진회색은 담백한 인상. 카드가 늘어도 화면이 차분하다.</span>
+          <span class="file">board-charcoal</span>
+        </figcaption>
+      </figure>
+      <figure>
+        <a href="board-green.png" target="_blank" rel="noopener">
+          <img src="board-green.png" width="1280" height="668" alt="진행 보드형 · 녹색 화면 예시" loading="lazy">
+        </a>
+        <figcaption>
+          <span class="label"><span class="sw sw-board-green" aria-hidden="true"></span>진행 보드형 · 녹색</span>
+          <span class="say">단계별로 밀어 가는 일 — 녹색은 부드럽고 정돈된 인상. 진행과 완료가 순하게 보인다.</span>
+          <span class="file">board-green</span>
+        </figcaption>
+      </figure>
+      <figure>
+        <a href="board-brown.png" target="_blank" rel="noopener">
+          <img src="board-brown.png" width="1280" height="668" alt="진행 보드형 · 갈색 화면 예시" loading="lazy">
+        </a>
+        <figcaption>
+          <span class="label"><span class="sw sw-board-brown" aria-hidden="true"></span>진행 보드형 · 갈색</span>
+          <span class="say">단계별로 밀어 가는 일 — 갈색은 따뜻하고 순한 인상. 함께 보는 화면이 무겁지 않다.</span>
+          <span class="file">board-brown</span>
+        </figcaption>
+      </figure>
+    </div>
+  </section>
+  <section class="row">
+    <div class="row-head">
+      <h2><span class="n">3</span>카드·상세형</h2>
+      <p class="sub">카드 목록 + 상세 패널</p>
+      <p class="fit">건 하나하나를 자세히 보는 회사에 맞는다. 고객이 직접 보는 화면에 적합하다.</p>
+    </div>
+    <div class="grid">
+      <figure>
+        <a href="card-navy.png" target="_blank" rel="noopener">
+          <img src="card-navy.png" width="1280" height="795" alt="카드·상세형 · 남색 화면 예시" loading="lazy">
+        </a>
+        <figcaption>
+          <span class="label"><span class="sw sw-card-navy" aria-hidden="true"></span>카드·상세형 · 남색</span>
+          <span class="say">건 하나를 자세히 보는 회사 — 남색은 차분하고 격식 있는 인상. 안내 화면이 단정하다.</span>
+          <span class="file">card-navy</span>
+        </figcaption>
+      </figure>
+      <figure>
+        <a href="card-charcoal.png" target="_blank" rel="noopener">
+          <img src="card-charcoal.png" width="1280" height="795" alt="카드·상세형 · 진회색(차콜) 화면 예시" loading="lazy">
+        </a>
+        <figcaption>
+          <span class="label"><span class="sw sw-card-charcoal" aria-hidden="true"></span>카드·상세형 · 진회색(차콜)</span>
+          <span class="say">건 하나를 자세히 보는 회사 — 진회색은 담백한 인상. 사진·서류가 주인공일 때.</span>
+          <span class="file">card-charcoal</span>
+        </figcaption>
+      </figure>
+      <figure>
+        <a href="card-green.png" target="_blank" rel="noopener">
+          <img src="card-green.png" width="1280" height="795" alt="카드·상세형 · 녹색 화면 예시" loading="lazy">
+        </a>
+        <figcaption>
+          <span class="label"><span class="sw sw-card-green" aria-hidden="true"></span>카드·상세형 · 녹색</span>
+          <span class="say">건 하나를 자세히 보는 회사 — 녹색은 부드럽고 정돈된 인상. 진행 안내가 순하게 읽힌다.</span>
+          <span class="file">card-green</span>
+        </figcaption>
+      </figure>
+      <figure>
+        <a href="card-brown.png" target="_blank" rel="noopener">
+          <img src="card-brown.png" width="1280" height="795" alt="카드·상세형 · 갈색 화면 예시" loading="lazy">
+        </a>
+        <figcaption>
+          <span class="label"><span class="sw sw-card-brown" aria-hidden="true"></span>카드·상세형 · 갈색</span>
+          <span class="say">건 하나를 자세히 보는 회사 — 갈색은 따뜻하고 순한 인상. 고객에게 보여 주는 화면을 부드럽게.</span>
+          <span class="file">card-brown</span>
+        </figcaption>
+      </figure>
+    </div>
+  </section>
+  <footer>
+    화면 안의 이름·번호·날짜는 모두 예시입니다. 실제 화면에는 회사에서 쓰는 말과 항목이 들어갑니다.
+    고른 조합의 색·글자 값은 tokens/&lt;구조&gt;-&lt;색&gt;.css 한 파일에 들어 있습니다.
+  </footer>
+</div>
+</body>
+</html>

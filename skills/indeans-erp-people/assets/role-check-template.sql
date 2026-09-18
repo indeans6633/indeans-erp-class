@@ -4,6 +4,29 @@
 -- 적용 전에 반드시 읽을 것: references/roles-basics.md 4절(빈칸이 통과하는 이유), references/lessons.md 4번.
 
 -- ─────────────────────────────────────────────────────────
+-- 0. 좁히기 전에 이 줄부터 — 앞 회차에서 만든 넓은 규칙을 먼저 지운다
+--    규칙은 더할수록 넓어진다. 같은 표에 넓은 규칙과 좁은 규칙이 함께 있으면
+--    둘 중 하나라도 통과시키는 쪽이 이겨서, 아래에서 아무리 좁혀도 그대로 다 보인다.
+--    (2회차 0001 이 만든 app_users_read(우리 회사 사람이면 전부)가 남아 있으면
+--     직원이 동료 명단을 그대로 다 읽는다 — 2026-09-18 리허설에서 실제로 새던 자리다.)
+--    아직 그 표를 만들기 전이면 "없어서 건너뜁니다" 안내만 나온다. 그대로 두고 계속한다.
+-- ─────────────────────────────────────────────────────────
+drop policy if exists app_users_read on app_users;
+drop policy if exists <표이름>_read   on <표이름>;
+drop policy if exists <표이름>_insert on <표이름>;
+drop policy if exists <표이름>_update on <표이름>;
+drop policy if exists <표이름>_delete on <표이름>;
+
+-- 이 파일이 아래에서 다시 만드는 것들 — 두 번 실행해도 "이미 있습니다" 로 멈추지 않게 한다.
+drop policy if exists app_users_read_self   on app_users;
+drop policy if exists app_users_write_owner on app_users;
+drop policy if exists app_users_update_owner on app_users;
+drop policy if exists change_log_read       on change_log;
+drop policy if exists change_log_insert     on change_log;
+
+-- 다 지운 뒤에는 그 표가 잠깐 아무에게도 안 보인다(규칙 0개 = 전부 차단). 이 파일을 끝까지 실행해야 열린다.
+
+-- ─────────────────────────────────────────────────────────
 -- 1. 역할 표 — 로그인 계정 하나에 행 하나
 -- ─────────────────────────────────────────────────────────
 create table if not exists app_users (
@@ -94,6 +117,10 @@ create table if not exists change_log (
 );
 
 alter table change_log enable row level security;
+
+-- 로그인 안 한 접속(anon)은 이 표에서 아예 뺀다. 표를 새로 만들 때마다 이 두 줄을 같이 쓴다.
+revoke all on table change_log from anon;
+grant select, insert on table change_log to authenticated;
 
 create policy change_log_read on change_log for select to authenticated
   using (coalesce(my_role(),'') = 'owner');

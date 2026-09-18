@@ -5,8 +5,10 @@
 //
 // 사용: node install.mjs --project "C:\path\to\my-erp" [--target both|claude|codex] [--dry-run]
 import fs from 'node:fs'
+import os from 'node:os'
 import path from 'node:path'
 import crypto from 'node:crypto'
+import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
@@ -43,6 +45,10 @@ const wantCodex = target === 'both' || target === 'codex'
 
 const hash = (buf) => crypto.createHash('sha256').update(buf).digest('hex')
 const rel = (dst) => path.relative(root, dst).split(path.sep).join('/')
+// 줄 끝(CRLF/LF)만 다른 것은 "같은 내용"으로 본다.
+// git 의 eol 설정 한 줄로 프로젝트 전체 줄 끝이 바뀌면, 그것을 고친 것으로 세어
+// 수백 개가 갱신·.new 로 뜨는 일이 생긴다(2026-09-18 리허설 실측 186개).
+const normEq = (a, b) => a.toString('utf8').replace(/\r\n/g, '\n') === b.toString('utf8').replace(/\r\n/g, '\n')
 function walk(dir, skip = () => false) {
   const out = []
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -183,11 +189,20 @@ const hashes = { ...(state.hashes || {}) }
 // ---------------------------------------------------------------- 충돌 검사
 const conflicts = []
 const skips = []
+const eolOnly = []   // 내용은 같고 줄 끝만 다른 파일 — 그대로 둔다(갱신으로 세지 않는다)
 for (const item of plan) {
   const r = rel(item.dst)
   if (!fs.existsSync(item.dst)) continue
   if (item.once) { skips.push(r); continue }        // 있으면 그대로 둔다
-  if (fs.readFileSync(item.dst).equals(item.data)) { skips.push(r); continue }
+  const cur = fs.readFileSync(item.dst)
+  if (cur.equals(item.data)) { skips.push(r); continue }
+  if (normEq(cur, item.data)) {
+    skips.push(r)
+    eolOnly.push(r)
+    installedSet.add(r)
+    hashes[r] = hash(cur)                            // 지금 파일 그대로를 기록해 다음 설치에서 고친 것으로 보지 않게 한다
+    continue
+  }
   if (installedSet.has(r)) continue                  // 우리가 넣었던 파일의 갱신은 허용
   conflicts.push(r)
 }
@@ -321,12 +336,29 @@ for (const id of RETIRED) {
   }
 }
 
+// ---------------------------------------------------------------- 설치 시점 커밋
+// 검수 훅이 "설치한 뒤로 무엇이 바뀌었나"를 볼 기준점이다. 이것이 없으면 훅은 아직 커밋하지 않은
+// 변경만 보게 되는데, 스킬들은 마지막에 커밋을 하므로 끝낼 때 트리가 깨끗해 검수가 한 번도 돌지 않는다.
+// 이미 적혀 있으면 그대로 둔다(기준점은 처음 설치한 자리여야 한다).
+function headCommit(dir) {
+  const r = spawnSync('git', ['-C', dir, 'rev-parse', 'HEAD'], { encoding: 'utf8', timeout: 15000, windowsHide: true })
+  const out = (r.stdout || '').trim()
+  return r.status === 0 && /^[0-9a-f]{7,40}$/i.test(out) ? out : null
+}
+const installedCommit = typeof state.installed_commit === 'string' && state.installed_commit
+  ? state.installed_commit
+  : headCommit(root)
+if (!installedCommit) {
+  notes.push('이 프로젝트는 아직 git 저장소가 아니어서 설치 시점을 표시하지 못했습니다. `git init` 과 첫 커밋을 한 뒤 같은 설치 명령을 한 번 더 실행하면 검수 기준점이 잡힙니다.')
+}
+
 // ---------------------------------------------------------------- 기록 저장
 if (!dry) {
   fs.mkdirSync(path.dirname(statePath), { recursive: true })
   fs.writeFileSync(statePath, JSON.stringify({
     version: manifest.version,
     target,
+    installed_commit: installedCommit,
     installed: [...installedSet].sort(),
     hashes,
     updated_at: new Date().toISOString(),
@@ -370,11 +402,30 @@ if (updated.length) {
   console.log('')
   console.log(`${p}이 중 ${updated.length}개는 전에 설치한 파일을 새 버전으로 갱신했습니다(직접 고친 흔적 없음).`)
 }
+if (eolOnly.length) {
+  console.log('')
+  console.log(`${p}내용이 같고 줄 끝(줄바꿈 표시)만 다른 파일 ${eolOnly.length}개는 그대로 뒀습니다 — 갱신이 아닙니다.`)
+}
 if (kept.length) {
   console.log('')
   console.log(`${p}다음 ${kept.length}개는 직접 고친 흔적(체크·메모)이 있어 원본을 그대로 두고 새 버전을 같은 자리에 ".new" 로 저장했습니다. 비교한 뒤 필요하면 옮겨 적으세요:`)
   kept.forEach((u) => console.log('  - ' + u + '  →  ' + u + '.new'))
+  console.log('  비교하는 법(어느 한 줄을 그대로 복사해 실행하세요 — 줄 끝 차이는 무시합니다):')
+  console.log(`    diff --strip-trailing-cr "${kept[0]}" "${kept[0]}.new"`)
   console.log('  ".new" 는 비교용입니다. 다음 설치에서 그 자리의 ".new" 는 새 내용으로 교체됩니다 — 옮겨 적을 것이 있으면 지금 옮기고, 다 옮겼으면 ".new" 를 지우세요.')
+  // 같은 스킬 파일이 Claude(.claude/skills) 와 Codex(.agents/skills) 양쪽에 들어간다.
+  // 한쪽에만 메모를 적었으면 그쪽만 .new 가 생기고 반대쪽은 조용히 새 버전으로 갱신된다 —
+  // 대표가 메모를 적어 둔 자리를 못 찾는 일이 없게 그 경로를 알려 준다.
+  const twinOf = (r) => r.startsWith('.claude/skills/') ? r.replace('.claude/skills/', '.agents/skills/')
+    : r.startsWith('.agents/skills/') ? r.replace('.agents/skills/', '.claude/skills/') : null
+  const keptSet = new Set(kept)
+  const twins = kept.map((r) => [r, twinOf(r)])
+    .filter(([, t]) => t && !keptSet.has(t) && fs.existsSync(path.join(root, t)))
+  if (twins.length) {
+    console.log('')
+    console.log(`${p}같은 파일이 다른 도구 쪽에도 있습니다 — 그쪽은 메모 없이 새 버전으로 갱신됐습니다. 메모를 옮겨 적을 때 함께 보세요:`)
+    twins.forEach(([r, t]) => console.log(`  - ${r}  ↔  ${t}`))
+  }
 }
 if (retiredRemoved.length) {
   console.log('')
@@ -387,6 +438,27 @@ if (retiredKept.length) {
 if (notes.length) {
   console.log('')
   notes.forEach((n) => console.log(`  안내: ${n}`))
+}
+
+// Codex 는 프로젝트 훅을 신뢰하기 전까지 조용히 건너뛴다 — 경고도 없이 검수가 돌지 않는다.
+// 신뢰 대장은 $CODEX_HOME(기본 ~/.codex)/config.toml 의 hooks.state 자리다.
+if (wantCodex && foundHooks.includes('erp-check.mjs')) {
+  console.log('')
+  console.log('Codex 를 쓰면 처음 한 번은 대화형(codex)으로 열어 훅 신뢰를 승인해야 검수가 돕니다.')
+  const codexHome = process.env.CODEX_HOME || path.join(os.homedir(), '.codex')
+  const cfg = path.join(codexHome, 'config.toml')
+  let cfgText = null
+  try { if (fs.existsSync(cfg)) cfgText = fs.readFileSync(cfg, 'utf8') } catch { cfgText = null }
+  if (cfgText !== null) {
+    const hooksJson = path.join(root, '.codex', 'hooks.json')
+    const variants = [hooksJson, hooksJson.split(path.sep).join('/'), hooksJson.replaceAll('\\', '\\\\')]
+    const hay = cfgText.toLowerCase()
+    const trusted = /hooks\.state/i.test(cfgText) && variants.some((v) => hay.includes(v.toLowerCase()))
+    if (!trusted) {
+      console.log(`  아직 신뢰 승인 전입니다 — 지금 상태로는 Codex 에서 검수가 돌지 않습니다(${cfg} 의 hooks.state 에 이 프로젝트 항목이 없습니다).`)
+      console.log('  이 프로젝트 폴더에서 `codex` 를 한 번 실행하고 훅을 신뢰할지 묻는 창에서 허용하세요. 한 번만 하면 됩니다.')
+    }
+  }
 }
 
 console.log('')

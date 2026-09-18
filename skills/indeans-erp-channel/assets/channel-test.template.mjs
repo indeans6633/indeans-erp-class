@@ -61,8 +61,13 @@ if (env.DIGEST_DISCORD_URL) {
   results.push({ name: '디스코드', status: null, ok: false, detail: '.env.local 에 DIGEST_DISCORD_URL 이 없습니다' })
 }
 
+// 텔레그램 주소 — 평소에는 그대로 둔다. 연습용 수신 서버로 바꿔 볼 때만 DIGEST_TELEGRAM_API_BASE 를 준다.
+const telegramBase = String(
+  process.env.DIGEST_TELEGRAM_API_BASE ?? env.DIGEST_TELEGRAM_API_BASE ?? 'https://api.telegram.org',
+).replace(/\/+$/, '')
+
 if (env.DIGEST_TELEGRAM_TOKEN && env.DIGEST_TELEGRAM_CHAT_ID) {
-  await send('텔레그램', () => fetch(`https://api.telegram.org/bot${env.DIGEST_TELEGRAM_TOKEN}/sendMessage`, {
+  await send('텔레그램', () => fetch(`${telegramBase}/bot${env.DIGEST_TELEGRAM_TOKEN}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ chat_id: env.DIGEST_TELEGRAM_CHAT_ID, text: message }),
@@ -83,4 +88,6 @@ console.log('응답이 200대여도 도착의 증거는 아닙니다. 폰에서 
 console.log('안 오면 스킬의 references/discord.md · references/telegram.md 의 "안 올 때" 절을 순서대로 봅니다.')
 
 // 하나라도 실패하면 1 로 끝낸다(사람이 놓치지 않게).
-process.exit(results.some((r) => !r.ok) ? 1 : 0)
+// process.exit() 로 즉시 끊지 않는다 — 실제 인터넷 발송이 섞이면 윈도우에서 끝나는 도중에 멈춰
+// 엉뚱한 종료 코드(127)가 나온다. 아래처럼 적어 두면 할 일을 마친 뒤 이 값으로 끝난다.
+process.exitCode = results.some((r) => !r.ok) ? 1 : 0

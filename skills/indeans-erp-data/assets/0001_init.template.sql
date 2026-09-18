@@ -64,6 +64,8 @@ create table if not exists jobs (
   customer    text,
   status      text not null default 'open',
   due_date    date,
+  -- 금액 칸 — company/structure.md 의 "이번에 만들지 않을 것"에 금액 항목이 있으면 이 줄을 지우고 시작한다.
+  -- 그대로 두면 미루기로 한 칸이 조용히 들어와, 화면에도 입력 칸이 생기고 나중에 빼기 어려워진다.
   amount      numeric(14,2),
   memo        text,
   created_at  timestamptz not null default now(),
@@ -76,7 +78,7 @@ comment on column jobs.title     is '<건 이름>';
 comment on column jobs.customer  is '<거래처 · 고객 이름>';
 comment on column jobs.status    is '<상태: 접수 / 진행 / 완료>';
 comment on column jobs.due_date  is '<예정일 · 납기>';
-comment on column jobs.amount    is '<금액(원)>';
+comment on column jobs.amount    is '<금액(원)>';   -- 위에서 금액 칸을 지웠으면 이 줄도 함께 지운다
 comment on column jobs.memo      is '<메모>';
 
 -- 자주 쓰는 정렬을 빠르게

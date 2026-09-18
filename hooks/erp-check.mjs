@@ -10,6 +10,25 @@
 //   생략      — 문서·보고서·회사 문서·수업 자료·진행 기록만 바뀐 경우,
 //               그리고 문구·주석·색값만 바뀐 표현 수정
 //
+// 어디서부터의 변경을 보나(기준점) — 위에서부터 있는 것을 쓴다.
+//   1) .owner/last-check.json 의 commit — 마지막으로 검수를 마친 자리
+//   2) .owner/install-state.json 의 installed_commit — 번들을 설치한 자리(설치기가 적는다)
+//   3) 첫 커밋
+//   스킬들은 마지막 절차로 커밋을 하므로, 기준점 없이 작업 트리(git status)만 보면
+//   끝낼 때는 언제나 깨끗해서 검수가 한 번도 돌지 않는다(2026-09-18 리허설 실측).
+//
+// .owner/last-check.json 규약 — `indeans-erp-check` 스킬이 검수를 마치거나 생략을 판단했을 때 적는다.
+//   {
+//     "commit": "<그때의 HEAD — git rev-parse HEAD>",   // 다음 판정의 기준점이 된다. 빠뜨리면 같은 변경을 또 요구한다.
+//     "at": "<시각>",
+//     "tool": "claude | codex",
+//     "result": "승인 | 승인(조건 반영) | 생략 — 문구만",
+//     "skipped_files": ["src/screens/ListScreen.tsx"]   // 표현 수정이라 검수를 생략한 파일
+//   }
+//   훅이 읽는 것은 commit 과 skipped_files 두 칸뿐이다(나머지는 사람이 읽는 기록).
+//   skipped_files 에 든 파일은 그 commit 이후 **다시 바뀌지 않았으면** 판정에서 건너뛴다.
+//   그 뒤 한 번이라도 커밋으로 바뀌면 다시 검수 대상이 된다(생략은 그때 한 번만 유효하다).
+//
 // 도구별 입출력 규약 — 두 도구의 공식 문서를 2026-09-18에 직접 열어 맞춘 것이다.
 //   Claude Code  https://code.claude.com/docs/en/hooks
 //     stdin: { session_id, prompt_id, transcript_path, cwd, scratchpad_dir, permission_mode,
@@ -77,7 +96,30 @@ const head = headRes.ok ? headRes.out.trim() : null
 const lastPath = path.join(ownerDir, 'last-check.json')
 let last = {}
 try { if (fs.existsSync(lastPath)) last = JSON.parse(fs.readFileSync(lastPath, 'utf8')) } catch { last = {} }
-const baseValid = last.commit && git('cat-file', '-e', `${last.commit}^{commit}`).ok ? last.commit : null
+const isCommit = (c) => !!c && git('cat-file', '-e', `${c}^{commit}`).ok
+
+// 설치 시점 커밋 — 설치기가 .owner/install-state.json 에 적어 둔다(저장소가 아니었으면 null).
+let installedCommit = null
+try {
+  const st = JSON.parse(fs.readFileSync(path.join(ownerDir, 'install-state.json'), 'utf8'))
+  if (typeof st.installed_commit === 'string') installedCommit = st.installed_commit
+} catch { /* 설치 기록이 없거나 깨졌으면 없는 것으로 본다 */ }
+
+// 첫 커밋 — 위의 둘이 모두 없을 때의 마지막 기준점
+const firstCommit = (() => {
+  const r = git('rev-list', '--max-parents=0', 'HEAD')
+  return r.ok ? r.out.trim().split('\n').filter(Boolean).pop() || null : null
+})()
+
+const checkedBase = isCommit(last.commit) ? last.commit : null       // 마지막으로 검수를 마친 자리
+const baseValid = checkedBase
+  || (isCommit(installedCommit) ? installedCommit : null)
+  || (firstCommit && firstCommit !== head ? firstCommit : null)
+
+// 생략 표식 — 검수를 생략한 파일 목록. 기준점이 "마지막 검수 자리"일 때만 쓴다.
+const skippedMark = checkedBase && Array.isArray(last.skipped_files)
+  ? new Set(last.skipped_files.map((p) => String(p).replace(/\\/g, '/')))
+  : new Set()
 
 // ---- 바뀐 파일 모으기 ----
 const changed = new Set()
@@ -92,13 +134,27 @@ if (status.ok) {
     if (p) changed.add(p.replace(/\\/g, '/'))
   }
 }
+// 기준점 이후의 커밋에서 바뀐 파일 — 스킬이 마지막에 커밋해도 이 줄 덕분에 훅이 본다.
+const committedSince = new Set()
 if (baseValid && head && baseValid !== head) {
   const r = git('diff', '--name-only', `${baseValid}..HEAD`)
-  if (r.ok) r.out.split('\n').map((s) => s.trim()).filter(Boolean).forEach((p) => changed.add(p.replace(/\\/g, '/')))
+  if (r.ok) {
+    r.out.split('\n').map((s) => s.trim()).filter(Boolean).forEach((p) => {
+      const q = p.replace(/\\/g, '/')
+      committedSince.add(q)
+      changed.add(q)
+    })
+  }
+}
+
+// 생략하기로 한 파일은 그 뒤 커밋으로 다시 바뀌지 않았으면 판정에서 뺀다.
+const markSkipped = []
+for (const p of skippedMark) {
+  if (changed.has(p) && !committedSince.has(p)) { changed.delete(p); markSkipped.push({ p, why: '전에 표현 수정으로 판단해 생략한 파일' }) }
 }
 
 // 검수 표식 자체가 HEAD 이고 작업 트리에 바뀐 것이 없으면 새 변경이 없다.
-if (!changed.size) finish({ need: false })
+if (!changed.size) finish({ need: false, skipped: markSkipped })
 
 // ---- 분류 ----
 const SKIP_PATH = [
@@ -148,6 +204,12 @@ const cosmeticLine = (l) => {
   if (/^['"`].*['"`],?$/.test(t)) return true                        // 문자열 한 줄
   if (/^[-\w]+\s*:\s*(#[0-9a-f]{3,8}|rgba?\(|hsla?\(|var\(--[\w-]+\))[^;]*;?$/i.test(t)) return true  // CSS 색값
   if (/^--[\w-]+\s*:/.test(t)) return true                           // CSS 변수 선언
+  // 태그 사이의 글자만 바뀐 줄 — <h1>주문 관리</h1> 처럼 여는·닫는 태그가 같고 중괄호(코드)가 없을 때만.
+  // 중괄호가 있으면({items.length} 등) 값이 달라지는 것이므로 표현 수정으로 보지 않는다.
+  if (/^<([A-Za-z][\w.-]*)\b[^<>{}]*>[^<>{}]*<\/\1>,?$/.test(t)) return true
+  // 객체 속성 문자열 한 줄 — label: '출고 완료', 처럼 이름은 그대로고 보이는 글자만 바뀐 줄.
+  // 이름을 따옴표로 감싼 줄("react": "^18.0.0")은 일부러 뺀다 — package.json 의 부품 목록이 걸린다.
+  if (/^[A-Za-z_$][\w$]*\s*:\s*(['"`])[^'"`{}<>]*\1,?$/.test(t)) return true
   return false
 }
 
@@ -157,7 +219,7 @@ const cssUnwrap = (l) => l.replace(/^[^{}]*\{\s*/, '').replace(/\s*\}\s*$/, '').
 const cosmeticIn = (p, l) => cosmeticLine(/.(css|scss|less)$/i.test(p) ? cssUnwrap(l) : l)
 
 const impactful = []
-const skipped = []
+const skipped = [...markSkipped]
 for (const p of [...changed].sort()) {
   if (isSkipPath(p)) { skipped.push({ p, why: '문서·자료' }); continue }
   const hard = HARD_PATH.find((h) => h.re.test(p))
@@ -183,15 +245,19 @@ for (const p of [...changed].sort()) {
     continue
   }
 
+  // 표현 판정을 경로 매칭보다 **먼저** 본다.
+  // 경로부터 보면 src/screens/ 아래 파일은 내용과 무관하게 언제나 검수 대상이 되어
+  // 화면 글자 한 줄 고치는 첫 실습에서도 종료가 막힌다(2026-09-18 리허설 실측).
+  // 권한·삭제 어휘 검사는 위에 그대로 있어 안전망 역할을 한다.
+  if (cosmetic) { skipped.push({ p, why: '문구·색만' }); continue }
+
   if (/^src\//.test(p)) {
     if (SRC_STRUCT.test(p)) { impactful.push({ p, why: '화면·저장 파일 변경' }); continue }
-    if (cosmetic) { skipped.push({ p, why: '문구·색만' }); continue }
     impactful.push({ p, why: '화면·동작 변경' })
     continue
   }
 
   if (/^(index\.html|src|api|server|scripts)\b/.test(p) || /\.(tsx?|jsx?|mjs|cjs)$/.test(p)) {
-    if (cosmetic) { skipped.push({ p, why: '문구·색만' }); continue }
     impactful.push({ p, why: '동작 변경' })
     continue
   }
@@ -246,6 +312,7 @@ function finish({ need, impactful = [], skipped = [], note = '', nagCount = 0 })
       '`indeans-erp-check` 스킬을 읽고 감독 판정 → 검증 실측 → 작업 보고서까지 마친 뒤 종료하세요.',
       '검수를 마치면 .owner/last-check.json 을 갱신해 같은 변경에 다시 요구하지 않게 합니다.',
       '표현만 고친 것이어서 검수가 필요 없다고 판단되면, 그 이유를 한 줄로 대표에게 말한 뒤 같은 파일을 갱신하세요.',
+      '이때 commit 에 지금 HEAD 를, skipped_files 에 생략한 파일 목록을 적습니다 — 비워 두면 다음에 같은 파일을 또 요구합니다.',
     ].join('\n')
     if (tool === 'codex') {
       // 막는 신호는 이 JSON 하나다(종료 코드는 0). stderr 는 사람이 나중에 읽는 기록일 뿐이다.

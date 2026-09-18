@@ -35,11 +35,12 @@
                "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
   --font-num:  ui-monospace, "SF Mono", Consolas, "Malgun Gothic", monospace;
 
-  /* 글자 크기 — 화면당 4종까지 */
+  /* 글자 크기 — 화면에 쓰는 것은 4종까지. 입력 칸(--fs-input)은 읽는 크기가 아니라 확대를 막는 기준이라 따로 둔다 */
   --fs-title: 19px;   /* 화면 제목 */
   --fs-body:  14px;   /* 본문·표 내용 (기준) */
   --fs-label: 13px;   /* 라벨·머리줄 */
   --fs-meta:  12px;   /* 날짜·보조 */
+  --fs-input: 16px;   /* 입력 칸 — 이보다 작으면 손가락 기기에서 입력할 때 화면이 확대된다 */
 
   /* 굵기 — 3종까지 */
   --fw-normal: 400;

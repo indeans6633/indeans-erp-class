@@ -17,7 +17,10 @@ body {
 
 .app { display: grid; grid-template-rows: auto minmax(0, 1fr); min-height: 100vh; }
 
-/* 상단 바 */
+/* 상단 바
+   상단 바의 강조색 버튼(.btn-primary)은 "강조색은 화면에 하나" 셈에서 뺀다.
+   그 자리는 화면마다 늘 같은 자리에 있는 머리글이라, 화면 안에서 다음에 할 행동을 가리키는
+   버튼 하나와 겹쳐 세면 어느 화면에서든 기준을 넘게 된다. 세는 대상은 본문(.main) 안의 버튼이다. */
 .top {
   display: flex; align-items: center; justify-content: space-between; gap: var(--sp-4);
   min-height: 52px; padding: 0 var(--sp-5);
@@ -67,17 +70,44 @@ body {
 .ellip { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .note { margin: 0; font-size: var(--fs-meta); color: var(--text-3); }
 
-/* 폼 기본 — 목업에는 입력 칸이 없지만 앱으로 옮길 때 기준이 된다 */
+/* 입력 폼 — 목업(비교 이미지)에는 입력 칸이 없지만, 상세·입력 화면은 모두가 만든다.
+   그 화면의 뼈대를 여기에 둔다. 화면 파일에 색·글자 크기를 직접 적지 않고 이 클래스를 쓴다.
+   값은 전부 var() 로만 쓴다 — 실제 값은 ../tokens/<구조>-<컬러>.css 에 있다. */
+.form { display: grid; gap: var(--sp-4); }
+.field { display: grid; gap: var(--sp-1); }
+.field > label,
+.form label { font-size: var(--fs-label); color: var(--text-2); font-weight: var(--fw-medium); }
+.field .hint { font-size: var(--fs-meta); color: var(--text-3); }
+
 input, select, textarea {
   font: inherit;
+  font-size: var(--fs-input);          /* 입력 칸은 본문보다 크게 — 손가락 기기에서 화면이 확대되지 않는 크기 */
   min-height: var(--tap);
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--surface);
+  color: var(--text);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
+  width: 100%;
 }
-/* 손가락으로 쓰는 기기에서 16px 미만이면 입력할 때 화면이 확대된다 */
-@media (hover: none) and (pointer: coarse) {
-  input:not([type=checkbox]):not([type=radio]), select, textarea { font-size: 16px; }
+textarea { min-height: calc(var(--tap) * 2); line-height: var(--lh-body); resize: vertical; }
+input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
 }
+input[disabled], select[disabled], textarea[disabled] { background: var(--surface-2); color: var(--text-3); }
+
+/* 오류 문구 — 빨강은 글자로만 쓴다(면을 칠하지 않는다) */
+.err { font-size: var(--fs-label); color: var(--danger); }
+.field[data-err] input, .field[data-err] select, .field[data-err] textarea { border-color: var(--danger); }
+
+/* 폼 아래 버튼 줄 — 저장이 오른쪽, 취소·지우기는 왼쪽 */
+.form-acts { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; }
+.form-acts .right { margin-left: auto; display: flex; gap: var(--sp-3); }
+
+/* 지우기처럼 되돌릴 수 없는 버튼 — 글자와 테두리만 빨강, 면은 칠하지 않는다 */
+.btn-danger { color: var(--danger); border-color: var(--danger); background: var(--surface); }
+.btn-danger:hover { border-color: var(--danger); }
 
 /* 좁은 화면(폰) — 요약은 한 줄에 하나, 상단 바는 두 줄까지 접힌다 */
 @media (max-width: 680px) {

@@ -12,8 +12,8 @@
 
 ## 먼저 보는 것 (읽고 나서 말을 건다)
 
-- `company/log.md` · `company/weekly/` 최근 기록 — 같은 증상을 전에 겪었나. **있으면 그때의 원인·수정을 먼저 읽는다.**
-- `company/casebook/` — 같은 유형의 판례.
+- `company/log.md` · `company/checkups/` 최근 기록 — 같은 증상을 전에 겪었나. **있으면 그때의 원인·수정을 먼저 읽는다.**
+- `.owner/precedents.md` — 같은 유형의 판례(판례 노트).
 - `git log --oneline -15` — 최근에 무엇이 바뀌었나. 어제까지 되던 것이면 답이 여기 있을 때가 많다.
 - `git status` — 저장 안 된 변경이 남아 있나.
 - `.owner/state.md` — 미해결 문제에 이미 적혀 있나.
@@ -98,7 +98,7 @@ git commit -m "<증상> 수정 전"
 ## 6단계 — 확인
 
 1. **2단계의 재현 순서를 그대로 다시 합니다.** 이번엔 기대한 것이 나와야 합니다.
-2. 고친 화면을 찍습니다(`node .owner/hooks/capture.mjs --url http://localhost:5173 --path "/" --name after`).
+2. 고친 화면을 찍습니다(`node .owner/hooks/capture.mjs --url http://localhost:5173 --path "/" --name after`). 버튼을 눌러야 나오는 화면이면 `--click "<버튼 글자>"` 를 더합니다(예: `--path "/" --click "오늘 할 일" --name after`).
 3. 같은 데이터를 쓰는 **다른 화면 한두 개**를 열어 봅니다. 한쪽을 고치고 다른 쪽이 깨지는 일이 흔합니다.
 4. 배포했다면 배포 주소를 새 창에서 열어 확인합니다. 옛 화면이 보이면 강제 새로고침.
 5. 데이터가 걸린 문제면 잘못 저장된 기존 데이터도 손봐야 하는지 대표에게 묻습니다.
@@ -115,7 +115,7 @@ git commit -m "<증상> 수정 — 원인: <한 줄>"
 ## 7단계 — 기록
 
 - `company/log.md` 맨 위에 한 건 남깁니다(증상·재현·원인·수정·확인). 대표의 말을 그대로 씁니다.
-- 되돌려야 했거나 같은 문제가 두 번째면 `references/casebook-template.md` 로 `company/casebook/` 에 판례를 남깁니다.
+- 되돌려야 했거나 같은 문제가 두 번째면 `.owner/precedents.md`(판례 노트)에 한 줄 남깁니다. 형식과 승격(두 번 나오면 규칙으로)은 `references/precedents.md`.
 - `.owner/state.md` 의 '미해결 문제'에서 해결한 줄을 지우고, 남은 관찰 항목은 남깁니다.
 - 원인이 "확인을 빠뜨려서"였다면 주간 점검 항목이나 작은 확인 스크립트로 바꿉니다. **조심하는 것은 세 번째에 또 실패합니다.**
 

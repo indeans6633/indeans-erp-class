@@ -1,8 +1,14 @@
-/* 인디언즈 ERP 클래스 — 디자인 비교 목업 공통 바탕
-   색·간격·글자 값은 ../tokens/<구조>-<컬러>.css 에서 온다. 여기에 값을 직접 쓰지 않는다. */
+/* 인디언즈 ERP 클래스 — 화면 공통 바탕 (구조 3종 공통)
+   색·글자·간격·모서리·선 굵기·그림자 값은 토큰 파일(src/styles/tokens.css — 선택창에서 고른 조합)에서 온다.
+   여기에 값을 직접 쓰지 않는다. 고른 스타일(7종)이 달라도 이 파일은 같다 — 스타일 차이는 전부 토큰 값으로 난다.
+   강조색: --primary 는 버튼 면에만(그 위 글자 --primary-on). 바탕 위 강조 글자·선택 표시선·포커스 테두리는 --primary-text.
+   테두리: 입력 칸·보조 버튼은 --border-input(바탕 대비 3:1 이상), 줄 사이 가는 선은 --border.
+   var(--이름, 기본값) 의 기본값은 옛 토큰 파일(그 이름이 없던 판)을 위한 것이다.
+   표 접기·아래에서 올라오는 시트·상태 칩·빈 화면은 자체 CSS 다(Tabler·daisyUI(MIT)는 생김새만 참고, 코드 복사 없음 — THIRD-PARTY-NOTICES.md). */
 
 *, *::before, *::after { box-sizing: border-box; }
 * { min-width: 0; }
+[hidden] { display: none !important; }
 
 body {
   margin: 0;
@@ -13,6 +19,9 @@ body {
   line-height: var(--lh-body);
   font-weight: var(--fw-normal);
   -webkit-text-size-adjust: 100%;
+  /* 한글은 낱말 중간에서 줄을 바꾸지 않는다. 띄어쓰기 없이 아주 긴 글자만 어디서든 끊어 화면 밖으로 밀리지 않게 */
+  word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 
 .app { display: grid; grid-template-rows: auto minmax(0, 1fr); min-height: 100vh; }
@@ -24,55 +33,118 @@ body {
 .top {
   display: flex; align-items: center; justify-content: space-between; gap: var(--sp-4);
   min-height: 52px; padding: 0 var(--sp-5);
-  background: var(--surface); border-bottom: 1px solid var(--border);
+  background: var(--surface); border-bottom: var(--line-w, 1px) solid var(--border);
 }
 .brand { display: flex; align-items: baseline; gap: var(--sp-3); }
-.brand .name { font-size: var(--fs-title); font-weight: var(--fw-bold); letter-spacing: -0.01em; }
+.brand .name {
+  font-family: var(--font-title, var(--font-sans)); font-size: var(--fs-title); font-weight: var(--fw-bold);
+  letter-spacing: var(--ls-title, -0.01em); line-height: var(--lh-tight);
+}
 .brand .kind { font-size: var(--fs-meta); color: var(--text-3); }
 .who { display: flex; align-items: center; gap: var(--sp-4); }
 .who .me { font-size: var(--fs-label); color: var(--text-2); }
 
 /* 화면 제목 줄 */
-.head { display: flex; align-items: baseline; gap: var(--sp-3); }
-.head h1 { margin: 0; font-size: var(--fs-title); font-weight: var(--fw-bold); line-height: var(--lh-tight); }
+.head { display: flex; align-items: baseline; flex-wrap: wrap; gap: var(--sp-1) var(--sp-3); }
+.head h1 {
+  margin: 0; font-family: var(--font-title, var(--font-sans)); font-size: var(--fs-title); font-weight: var(--fw-bold);
+  line-height: var(--lh-tight); letter-spacing: var(--ls-title, -0.01em);
+}
 .head .count { font-size: var(--fs-label); color: var(--text-2); font-family: var(--font-num); font-variant-numeric: tabular-nums; }
 .head .today { margin-left: auto; font-size: var(--fs-meta); color: var(--text-3); }
 
-/* 버튼 */
-.btn {
-  min-height: var(--tap); padding: 0 var(--sp-4);
-  border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
-  background: var(--surface); color: var(--text);
-  font: inherit; font-size: var(--fs-label); font-weight: var(--fw-medium); cursor: pointer;
+/* 구역 제목 — 제목보다 작고 본문보다 굵게(글자 크기를 새로 만들지 않는다) */
+.sec-h { margin: 0; font-size: var(--fs-body); font-weight: var(--fw-bold); }
+
+/* 돌아가기 링크 */
+.back {
+  display: inline-flex; align-items: center; align-self: flex-start; min-height: var(--tap);
+  color: var(--text-2); text-decoration: none; font-size: var(--fs-label); font-weight: var(--fw-medium);
 }
+.back:hover { color: var(--text); }
+
+/* 건 이름 링크 — 글자처럼 보이되 누를 수 있다(줄 전체에 클릭을 거는 대신 이름을 링크로 둔다) */
+a.name { color: inherit; text-decoration: none; }
+a.name:hover { text-decoration: underline; }
+/* 포커스 테두리 — 바탕 위에서 잘 보이는 강조 글자색(--primary 는 밝은 색일 수 있다) */
+a:focus-visible, button:focus-visible { outline: 2px solid var(--primary-text, var(--primary)); outline-offset: 2px; }
+
+/* 버튼 — 누르는 순간 반응(살짝 작아짐), 움직임을 줄이도록 설정한 기기에서는 움직이지 않는다 */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--sp-1);
+  min-height: var(--tap); padding: 0 var(--sp-4);
+  border: var(--line-w, 1px) solid var(--border-input, var(--border-strong)); border-radius: var(--radius-btn, var(--radius-sm));
+  background: var(--surface); color: var(--text);
+  font: inherit; font-size: var(--fs-label); font-weight: var(--fw-medium); line-height: var(--lh-tight);
+  cursor: pointer; touch-action: manipulation;
+  transition: background-color 150ms ease-out, border-color 150ms ease-out, transform 120ms ease-out;
+}
+.btn:hover { background: var(--surface-2); }
+.btn:active { transform: scale(0.98); }
 .btn-primary { background: var(--primary); border-color: var(--primary); color: var(--primary-on); }
-.btn:hover { border-color: var(--border-strong); }
 .btn-primary:hover { background: var(--primary-hover); border-color: var(--primary-hover); }
+.btn-block { width: 100%; }
+.btn[disabled] { opacity: 0.6; cursor: default; transform: none; }
+/* 지우기처럼 되돌릴 수 없는 버튼 — 글자와 테두리만 빨강, 면은 칠하지 않는다 */
+.btn-danger { color: var(--danger); border-color: var(--danger); background: var(--surface); }
+.btn-danger:hover { background: var(--surface-2); }
+
+@media (prefers-reduced-motion: reduce) {
+  .btn { transition: none; }
+  .btn:active { transform: none; }
+}
+
+/* 상자 — 표·폼·할 일 목록을 담는 기본 면 */
+.panel {
+  background: var(--surface); border: var(--line-w, 1px) solid var(--border);
+  border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden;
+}
+.panel-body { padding: var(--sp-4); display: grid; gap: var(--sp-4); }
+.narrow { width: 100%; max-width: 720px; }
 
 /* 단계 표시 — 색 막대가 아니라 점과 글자로 */
 .stage { display: inline-flex; align-items: center; gap: var(--sp-1); font-size: var(--fs-label); color: var(--text-2); }
 .stage::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex: none; }
 .stage-done { color: var(--text-3); }
 
-/* 오늘 볼 것 — 세 칸 요약 (구조 3종 공통) */
-.sums-h { margin: 0; font-size: var(--fs-label); font-weight: var(--fw-medium); color: var(--text-2); }
-.sums { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-3); }
-.sum {
-  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  padding: var(--sp-3) var(--sp-4); display: grid; gap: 2px;
-}
-.sum .k { font-size: var(--fs-label); color: var(--text-2); }
-.sum .v { font-size: var(--fs-title); font-weight: var(--fw-bold); line-height: var(--lh-tight); }
-.sum .d { font-size: var(--fs-meta); color: var(--text-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* 단계 줄 — 지금 어디인지 글자로 표시한다(단계마다 다른 색을 쓰지 않는다) */
+.steps { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); font-size: var(--fs-label); color: var(--text-3); }
+.steps .step { padding: var(--sp-1) var(--sp-2); border: var(--line-w, 1px) solid var(--border); border-radius: var(--radius-sm); }
+.steps .step[aria-current="step"] { color: var(--primary-text, var(--primary)); border-color: var(--primary-text, var(--primary)); background: var(--primary-soft); font-weight: var(--fw-medium); }
+.steps .sep { color: var(--text-3); }
+
+/* 다음 할 일 — 상세 화면 맨 위. 상태 이름이 아니라 동작으로 쓴다("확인 요청") */
+.next { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--sp-3); }
+.next-label { font-size: var(--fs-label); color: var(--text-2); }
 
 .num { font-family: var(--font-num); font-variant-numeric: tabular-nums; }
 .ellip { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .note { margin: 0; font-size: var(--fs-meta); color: var(--text-3); }
+.late { color: var(--warn); font-weight: var(--fw-medium); }
 
-/* 입력 폼 — 목업(비교 이미지)에는 입력 칸이 없지만, 상세·입력 화면은 모두가 만든다.
-   그 화면의 뼈대를 여기에 둔다. 화면 파일에 색·글자 크기를 직접 적지 않고 이 클래스를 쓴다.
-   값은 전부 var() 로만 쓴다 — 실제 값은 ../tokens/<구조>-<컬러>.css 에 있다. */
+/* 오늘 현황 — 할 일 한 줄에 한 건, 오른쪽에 처리 버튼 하나.
+   건수는 제목 옆 숫자 하나로 둔다. 큰 숫자 칸 여러 개를 화면 위에 늘어놓지 않는다. */
+.group-h { margin: 0; display: flex; align-items: baseline; gap: var(--sp-2); font-size: var(--fs-label); font-weight: var(--fw-medium); color: var(--text-2); }
+.group-h .n { font-family: var(--font-num); font-variant-numeric: tabular-nums; color: var(--text-3); }
+.todo {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--sp-3);
+  min-height: var(--row-h); padding: var(--sp-2) var(--sp-4);
+}
+.todo .what { display: grid; gap: 2px; }
+.todo .name { font-weight: var(--fw-medium); }
+.todo .meta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-1) var(--sp-3); font-size: var(--fs-meta); color: var(--text-3); }
+/* 끝낸 것 — 아래로 내리고 흐리게. 빨강으로 칠하지 않는다 */
+.is-done .todo, .is-done .todo .name { color: var(--text-3); }
+
+/* 빈 화면 — "아직 없음" 한 줄 + 다음에 할 일 한 줄. 흰 화면으로 두지 않는다 */
+.empty {
+  display: grid; gap: var(--sp-1); justify-items: start; padding: var(--sp-4);
+  background: var(--surface); border: var(--line-w, 1px) solid var(--border); border-radius: var(--radius);
+}
+.empty-t { margin: 0; font-size: var(--fs-body); font-weight: var(--fw-medium); color: var(--text); }
+.empty-d { margin: 0; font-size: var(--fs-label); color: var(--text-2); }
+
+/* 입력 폼 — 상세·입력 화면의 뼈대. 화면 파일에 색·글자 크기를 직접 적지 않고 이 클래스를 쓴다. */
 .form { display: grid; gap: var(--sp-4); }
 .field { display: grid; gap: var(--sp-1); }
 .field > label,
@@ -86,13 +158,13 @@ input, select, textarea {
   padding: var(--sp-2) var(--sp-3);
   background: var(--surface);
   color: var(--text);
-  border: 1px solid var(--border-strong);
+  border: var(--line-w, 1px) solid var(--border-input, var(--border-strong));   /* 바탕 대비 3:1 이상 */
   border-radius: var(--radius-sm);
   width: 100%;
 }
 textarea { min-height: calc(var(--tap) * 2); line-height: var(--lh-body); resize: vertical; }
 input:focus-visible, select:focus-visible, textarea:focus-visible {
-  outline: 2px solid var(--primary);
+  outline: 2px solid var(--primary-text, var(--primary));
   outline-offset: 1px;
 }
 input[disabled], select[disabled], textarea[disabled] { background: var(--surface-2); color: var(--text-3); }
@@ -103,18 +175,75 @@ input[disabled], select[disabled], textarea[disabled] { background: var(--surfac
 
 /* 폼 아래 버튼 줄 — 저장이 오른쪽, 취소·지우기는 왼쪽 */
 .form-acts { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; }
-.form-acts .right { margin-left: auto; display: flex; gap: var(--sp-3); }
+.form-acts .right { margin-left: auto; display: flex; flex-wrap: wrap; gap: var(--sp-3); }
 
-/* 지우기처럼 되돌릴 수 없는 버튼 — 글자와 테두리만 빨강, 면은 칠하지 않는다 */
-.btn-danger { color: var(--danger); border-color: var(--danger); background: var(--surface); }
-.btn-danger:hover { border-color: var(--danger); }
-
-/* 좁은 화면(폰) — 요약은 한 줄에 하나, 상단 바는 두 줄까지 접힌다 */
-@media (max-width: 680px) {
-  .sums { grid-template-columns: minmax(0, 1fr); }
-  .top { flex-wrap: wrap; padding: var(--sp-2) var(--sp-3); }
+/* 상태 칩 — 단계·담당처럼 몇 개 중 하나를 고르는 칸. 진짜 라디오 단추를 감싼다(키보드·화면 읽기 프로그램으로도 고른다).
+   고른 칩은 색만이 아니라 테두리 두께로도 구분한다. 모양은 버튼 모서리(--radius-btn)를 따른다. */
+.chips { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin: 0; padding: 0; border: 0; }
+.chips > legend { float: left; width: 100%; margin: 0 0 var(--sp-1); padding: 0; font-size: var(--fs-label); color: var(--text-2); font-weight: var(--fw-medium); }
+.chips > legend + * { clear: both; }
+.chip { position: relative; display: inline-flex; cursor: pointer; }
+.chip input { position: absolute; top: 0; left: 0; width: 1px; height: 1px; min-height: 0; margin: 0; padding: 0; opacity: 0; pointer-events: none; }
+.chip span {
+  display: inline-flex; align-items: center; gap: var(--sp-1); min-height: var(--tap); padding: 0 var(--sp-4);
+  border: var(--line-w, 1px) solid var(--border-input, var(--border-strong)); border-radius: var(--radius-btn, var(--radius-sm));
+  background: var(--surface); color: var(--text); font-size: var(--fs-label); font-weight: var(--fw-medium);
 }
-/* 손가락으로 누르는 기기에서는 누르는 곳을 더 크게 */
+.chip span::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex: none; }
+.chip input:checked + span {
+  color: var(--primary-text, var(--primary)); border-color: var(--primary-text, var(--primary));
+  box-shadow: inset 0 0 0 1px var(--primary-text, var(--primary)); background: var(--primary-soft);
+}
+.chip input:focus-visible + span { outline: 2px solid var(--primary-text, var(--primary)); outline-offset: 2px; }
+
+/* 아래에서 올라오는 시트 — 폰에서는 화면 아래에 붙고, 넓은 화면(681px 이상)에서는 가운데 창이 된다.
+   <dialog class="sheet"> + showModal(). 위쪽 잡는 막대 · 바깥을 누르거나 아래로 끌면 닫힘 · 안쪽 스크롤이 뒤로 번지지 않음 ·
+   아이폰 아래 홈 표시 영역만큼 여백. 여는·닫는 동작은 앱 코드가 한다(목업은 app/mock.js). */
+.sheet {
+  width: 100%; max-width: 560px; max-height: min(85vh, 640px);
+  margin: auto auto 0; padding: 0;
+  background: var(--surface); color: var(--text);
+  border: var(--line-w, 1px) solid var(--border); border-bottom: 0;
+  border-radius: var(--radius-lg, var(--radius)) var(--radius-lg, var(--radius)) 0 0;
+  box-shadow: var(--shadow-lg, var(--shadow));
+}
+.sheet[open] { display: flex; flex-direction: column; }
+.sheet::backdrop { background: rgba(0, 0, 0, 0.45); }          /* 뒤 화면을 어둡게 — 색 토큰이 아니라 가림막 */
+.sheet-grip { flex: none; align-self: center; width: 36px; height: 4px; margin-top: var(--sp-2); border-radius: 2px; background: var(--border-input, var(--border-strong)); }
+.sheet-head { flex: none; display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); padding: var(--sp-2) var(--sp-4); touch-action: none; }
+.sheet-head h2 { margin: 0; font-size: var(--fs-body); font-weight: var(--fw-bold); }
+.sheet-body { flex: 1 1 auto; overflow-y: auto; overscroll-behavior: contain; padding: var(--sp-2) var(--sp-4) var(--sp-4); display: grid; gap: var(--sp-4); align-content: start; }
+.sheet-acts {
+  flex: none; display: flex; gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4) calc(var(--sp-3) + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--border);
+}
+.sheet-acts .btn { flex: 1 1 0; }
+@media (min-width: 681px) {
+  .sheet { margin: auto; border-bottom: var(--line-w, 1px) solid var(--border); border-radius: var(--radius-lg, var(--radius)); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .sheet[open] { animation: sheet-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+}
+@keyframes sheet-in { from { transform: translateY(32px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* 표 — 줄 단위 격자(div)에 표 역할(role="table"·"row"·"columnheader"·"cell")을 붙인다.
+   좁은 화면에서 카드처럼 접혀도 화면 읽기 프로그램은 표로 읽는다(목록·표형 목업 list.html).
+   열이 많아 접기 어려운 표(정산표 등)는 가로로 미는 칸에 넣는다 — 키보드로도 밀 수 있게 tabindex="0" + aria-label. */
+.table-scroll { overflow-x: auto; overscroll-behavior-x: contain; }
+.table-scroll:focus-visible { outline: 2px solid var(--primary-text, var(--primary)); outline-offset: 2px; }
+/* 눈에는 안 보이고 화면 읽기 프로그램만 읽는 글자(접힌 표의 머리줄 등) */
+.sr-only {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden;
+  clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; border: 0;
+}
+
+/* 좁은 화면(폰) — 상단 바는 두 줄까지 접힌다 */
+@media (max-width: 680px) {
+  .top { flex-wrap: wrap; padding: var(--sp-2) var(--sp-3); }
+  .who { margin-left: auto; }
+}
+/* 손가락으로 누르는 기기에서는 누르는 곳을 더 크게(값은 토큰의 --tap-touch) */
 @media (pointer: coarse) {
-  :root { --tap: 44px; }
+  :root { --tap: var(--tap-touch, 44px); }
 }

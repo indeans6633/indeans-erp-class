@@ -9,9 +9,17 @@
     "unit": null,
     "first_flow": null
   },
+  "interview": {
+    "round": 0,
+    "open_items": [],
+    "updated_at": null
+  },
   "design": {
     "structure": null,
-    "color": null,
+    "family": null,
+    "palette": null,
+    "scheme": null,
+    "code": null,
     "tokens": null
   },
   "app": {
@@ -31,10 +39,10 @@
     "first_received": false
   },
   "sessions": {
-    "1": { "outcome": "핵심 업무 흐름 1개를 눌러 볼 수 있는 초안 + 첫 작업 보고서", "done": false },
-    "2": { "outcome": "직원 계정으로 입력하고 다시 접속해도 저장된 내용이 보이는 앱", "done": false },
-    "3": { "outcome": "선택한 채널에서 운영 보고를 실제로 수신", "done": false },
-    "4": { "outcome": "검수·복구를 직접 확인하고 실사용 준비 완료", "done": false },
+    "1": { "outcome": "설치·계정 가입 + 1차 인터뷰(회사·업종)로 쓴 회사 문서 + 고른 디자인", "done": false },
+    "2": { "outcome": "2·3차 인터뷰로 정한 첫 흐름이 초안 → 실제 저장 → 인터넷 주소로 열리는 앱 + 작업 보고서", "done": false },
+    "3": { "outcome": "(가안 — 2회차 뒤 확정) 권한 단계 · 운영 보고 단계", "done": false },
+    "4": { "outcome": "(가안 — 2회차 뒤 확정) 돈 흐름 단계 또는 두 번째 흐름 단계 · 실사용 준비 단계", "done": false },
     "final": { "outcome": "2주 사용 결과 + 다음 개선 순서", "done": false }
   },
   "open_problems": [],

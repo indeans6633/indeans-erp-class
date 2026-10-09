@@ -2,13 +2,18 @@
 // 검수 훅 — 작업이 끝날 때(Stop) 무엇이 바뀌었는지 보고, 영향이 있는 변경이면 검수를 받고 끝내라고 요구한다.
 // 네트워크 호출 없음. 빌드·캡처처럼 오래 걸리는 일은 여기서 하지 않는다(요구만 하고 실제 검수는 스킬이 한다).
 //
-// 사용(도구가 자동으로 부른다): node .owner/hooks/erp-check.mjs --tool claude|codex
+// 사용(도구가 자동으로 부른다 — 작업 폴더와 무관하게 이 파일을 찾도록 등록 문장에 경로를 박아 둔다):
+//   Claude Code  node "${CLAUDE_PROJECT_DIR}/.owner/hooks/erp-check.mjs" --tool claude   (공식 자리 표시 — 중괄호 꼴)
+//   Codex        node "<설치할 때의 프로젝트 절대 경로>/.owner/hooks/erp-check.mjs" --tool codex   (설치기가 써넣는다)
+//   상대 경로(node .owner/hooks/…)로 등록하면 AI 가 cd 한 세션에서 "Cannot find module" 로 조용히 꺼진다 — install.mjs 「훅 등록」.
 //   --debug   표준입력 없이 판정만 출력해 본다(사람이 확인할 때)
 //
 // 판정 기준은 "영향"이다. 줄 수로 판단하지 않는다.
 //   검수 필요 — 화면·데이터 구조·권한 조건·배포 설정·삭제 조건이 바뀐 변경
 //   생략      — 문서·보고서·회사 문서·수업 자료·진행 기록만 바뀐 경우,
 //               그리고 문구·주석·색값만 바뀐 표현 수정
+//   이 훅은 "검수가 필요한가"만 가른다. 누가 볼지(감독 필수·디자인 감독·감독 생략)는
+//   indeans-erp-check 스킬의 위험 등급표가 정한다 — 두 기준은 같은 영향 기준을 쓴다.
 //
 // 어디서부터의 변경을 보나(기준점) — 위에서부터 있는 것을 쓴다.
 //   1) .owner/last-check.json 의 commit — 마지막으로 검수를 마친 자리
@@ -173,12 +178,66 @@ const HARD_PATH = [
 ]
 // src 안에서 화면·저장·권한 쪽임이 경로로 드러나는 것들(plan §3 의 키워드)
 const SRC_STRUCT = /(screens?|pages?|routes?|router|auth|store|storage|db|supabase)/i
-// 변경 줄(또는 경로)에 있으면 권한·삭제 쪽 변경으로 본다.
-// **낱말 경계(\b)를 쓰지 않는다.** `permissions.ts`·`roles`·`isStaff`·`canDelete` 처럼 붙어 쓰는 이름이
-// 실제 권한 파일의 대부분인데, 경계를 걸면 그것들이 전부 빠진다(권한 배열에 역할 한 줄을 더한 변경이
-// "문구만 바뀜"으로 통과한 실측 사례). 방향은 과검출이다 — 아니면 검수에서 한 줄로 넘기면 된다.
-const RISK_WORD = /(role|permission|policy|rls|grant|revoke|delete|drop|truncate|auth|signin|signup|logout|service_role|anon|admin|owner|staff|client)/i
-const risky = (s) => RISK_WORD.test(s)
+// 권한·삭제 쪽 변경 가리기 — 낱말 단위로, 그리고 "무엇을 하는 줄인가"(문맥)까지 본다.
+// 예전에는 글자 조각만 찾아서(경계 없음) `.owner`(owner)·`backdrop`(drop)·`role="table"`(role)·거래처 키 `client` 가
+// 전부 "권한·삭제 어휘"로 걸렸다 — 선택창이 만든 CSS 가 매번 걸려 1회차 디자인 직후 모든 수강생이 요구를 받았다(2026-10-09 리허설).
+// 그렇다고 \b 만 걸면 `isStaff`·`canDelete`·`permissions.ts` 처럼 붙여 쓴 진짜 권한 이름이 빠진다(권한 배열에 역할 한 줄을
+// 더한 변경이 "문구만 바뀜"으로 통과한 실측 사례). 그래서 이름을 낱말로 쪼갠 뒤(isStaff → is staff · can_delete → can delete)
+// 아래 경우만 권한·삭제 변경으로 본다.
+//   ① 권한·인증 낱말 — permission(s)·policy·rls·grant·revoke·role(s)·auth·admin·anon·allowed·privilege …, 로그인·로그아웃(sign in/up/out · log in/out)
+//   ② 삭제·구조 동작 — .delete( · delete from · .remove( · drop table/column/policy… · .drop( · truncate table · 이름 속 delete(canDelete·onDelete·deleted_at)
+//   ③ 역할 분기 — is+역할(isOwner·isStaff·isAdmin·isManager) · can+동작(canEdit·canDelete…) · has+access/role/permission
+//      · 역할 값('owner'·'staff'·'admin'·'manager')을 비교(=== 'owner')·목록(['owner','staff'])·in(…)·includes(…) 로 쓰는 줄
+// 보지 않는 것: 주석 줄 · 스타일 파일(css·scss·sass·less) · HTML/JSX 속성 값(role="table"·aria-*·class/className·data-*·id)
+//   · CSS 속성 선택자([role="row"]) · .owner/… 경로. 업무 이름으로 흔한 owner·staff·client 는 낱말 하나만으로는 걸지 않는다.
+// 방향은 여전히 과검출 쪽이다 — 아니면 검수에서 한 줄로 넘기면 된다.
+const RISK_WORDS = new Set(['permission', 'permissions', 'policy', 'policies', 'rls', 'acl', 'grant', 'grants', 'granted', 'revoke', 'revokes', 'revoked',
+  'role', 'roles', 'auth', 'oauth', 'authorize', 'authorized', 'authorization', 'admin', 'admins', 'anon', 'allowed', 'allowlist', 'denylist',
+  'privilege', 'privileges', 'impersonate', 'superuser', 'signin', 'signup', 'signout', 'logout', 'login',
+  'delete', 'deleted', 'deletes', 'deleting', 'deletion'])
+const RISK_PATH_WORDS = new Set(['permission', 'permissions', 'policy', 'policies', 'rls', 'acl', 'role', 'roles', 'auth', 'oauth', 'admin', 'anon',
+  'guard', 'guards', 'privilege', 'privileges', 'signin', 'signup', 'signout', 'logout', 'delete'])
+const ROLE_NAMES = new Set(['owner', 'staff', 'admin', 'manager'])
+const CAN_VERBS = new Set(['delete', 'edit', 'view', 'read', 'write', 'create', 'update', 'manage', 'see', 'access', 'approve', 'cancel', 'remove', 'change', 'modify', 'assign'])
+const ROLE_LIT = `['"\`](?:owner|staff|admin|manager)['"\`]`
+const ROLE_CMP = new RegExp(`(?:[!=]==?|\\bin\\s*\\(|\\.includes\\s*\\()\\s*\\[?\\s*${ROLE_LIT}|${ROLE_LIT}\\s*[!=]==?`, 'i')
+const ROLE_ARR = new RegExp(`\\[[^\\]]*${ROLE_LIT}[^\\]]*\\]`, 'i')
+const DELETE_ACT = /\.delete\s*\(|\bdelete\s+from\b|\.remove\s*\(|\bdrop\s+(?:table|column|policy|function|trigger|view|index|schema|constraint|type|role|owned)\b|\.drop\s*\(|\btruncate\s+(?:table\s+)?[\w."]+/i
+const STYLE_FILE = /\.(css|scss|sass|less)$/i
+// isStaff → is staff · SIGN_IN → sign in · deleted_at → deleted at (한글은 나눔표로 본다)
+const wordsOf = (s) => String(s).replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')
+  .toLowerCase().split(/[^a-z0-9]+/).filter(Boolean)
+const isCommentLine = (l) => /^\s*(\/\/|\/\*|\*|#|<!--|--)/.test(l)
+const scrubLine = (l) => String(l)
+  .replace(/\/\*.*?\*\//g, ' ')                                                  // 한 줄 안의 /* … */
+  .replace(/(^|\s)\/\/.*$/, '$1')                                                 // 줄 끝 // 주석(주소의 // 는 앞에 빈칸이 없어 남는다)
+  .replace(/\b(?:role|aria-[\w-]+|class|className|data-[\w-]+|id|htmlFor|tabIndex)\s*=\s*(?:"[^"]*"|'[^']*'|\{[^{}]*\})/g, ' ')   // HTML/JSX 속성 값
+  .replace(/\[\s*(?:role|aria-[\w-]+|data-[\w-]+)\s*[~|^$*]?=\s*(?:"[^"]*"|'[^']*'|[^\]]*)\]/g, ' ')                          // CSS 속성 선택자
+  .replace(/(?:\.\.?\/)?\.owner\/[\w./-]*/g, ' ')                                 // .owner/… 경로
+  .replace(/https?:\/\/[^\s'"`)]+/g, ' ')                                         // 주소(…/privacy-policy 같은 글자는 권한이 아니다)
+function riskyLine(raw) {
+  if (isCommentLine(raw)) return false
+  const l = scrubLine(raw)
+  if (!l.trim()) return false
+  if (DELETE_ACT.test(l) || ROLE_CMP.test(l) || ROLE_ARR.test(l)) return true
+  const w = wordsOf(l)
+  for (let i = 0; i < w.length; i++) {
+    if (RISK_WORDS.has(w[i])) return true
+    const n = w[i + 1]
+    if (!n) continue
+    if (w[i] === 'sign' && (n === 'in' || n === 'up' || n === 'out')) return true
+    if (w[i] === 'log' && (n === 'in' || n === 'out')) return true
+    if (w[i] === 'is' && ROLE_NAMES.has(n)) return true
+    if (w[i] === 'can' && CAN_VERBS.has(n)) return true
+    if (w[i] === 'has' && (n === 'access' || n === 'role' || n === 'permission')) return true
+    if (w[i] === 'access' && n === 'token') return true
+  }
+  return false
+}
+// 바뀐 줄 중 하나라도 권한·삭제 쪽이면 참. 스타일 파일은 권한을 바꿀 수 없으니 보지 않는다.
+const riskyBody = (p, text) => !STYLE_FILE.test(p) && String(text).split('\n').some(riskyLine)
+// 경로 — 권한·인증·삭제 파일임이 이름에 드러나는 것만(src/lib/auth.ts · permissions.ts · useRole.ts). 거래처(client) 화면은 아니다.
+const riskyPath = (p) => wordsOf(p).some((w) => RISK_PATH_WORDS.has(w))
 
 const isSkipPath = (p) => SKIP_PATH.some((re) => re.test(p))
 const diffOf = (p) => {
@@ -235,8 +294,8 @@ for (const p of [...changed].sort()) {
   // 권한 목록에 역할 이름 한 줄을 더하는 것은 겉보기에 "문자열 한 줄"이지만
   // 누가 무엇을 지울 수 있는지가 바뀐다 — 그래서 cosmetic 이어도 검수로 올린다.
   // 아래 분류의 어느 갈래도 이 검사를 건너뛸 수 없게 여기 한 번만 두었다.
-  if (risky(body)) { impactful.push({ p, why: '바뀐 줄에 권한·삭제 어휘가 있음' }); continue }
-  if (risky(p)) { impactful.push({ p, why: cosmetic ? '권한·삭제 관련 파일 — 문구·색만 바뀐 듯하나 확인 필요' : '권한·삭제 관련 파일 변경' }); continue }
+  if (riskyBody(p, body)) { impactful.push({ p, why: '바뀐 줄에 권한·삭제 어휘가 있음' }); continue }
+  if (riskyPath(p)) { impactful.push({ p, why: cosmetic ? '권한·삭제 관련 파일 — 문구·색만 바뀐 듯하나 확인 필요' : '권한·삭제 관련 파일 변경' }); continue }
 
   if (/^package\.json$/.test(p)) {
     if (/"(dependencies|devDependencies)"/.test(body) || /^\s*"[@\w./-]+"\s*:\s*"[~^>=<*\d]/m.test(body)) {
@@ -309,7 +368,7 @@ function finish({ need, impactful = [], skipped = [], note = '', nagCount = 0 })
       `영향 있는 변경 ${impactful.length}건:`,
       listLines(impactful),
       '',
-      '`indeans-erp-check` 스킬을 읽고 감독 판정 → 검증 실측 → 작업 보고서까지 마친 뒤 종료하세요.',
+      '`indeans-erp-check` 스킬을 읽고 위험 등급표에 따라 감독 판정(등급이 요구할 때) → 검증 실측 → 작업 보고서까지 마친 뒤 종료하세요.',
       '검수를 마치면 .owner/last-check.json 을 갱신해 같은 변경에 다시 요구하지 않게 합니다.',
       '표현만 고친 것이어서 검수가 필요 없다고 판단되면, 그 이유를 한 줄로 대표에게 말한 뒤 같은 파일을 갱신하세요.',
       '이때 commit 에 지금 HEAD 를, skipped_files 에 생략한 파일 목록을 적습니다 — 비워 두면 다음에 같은 파일을 또 요구합니다.',

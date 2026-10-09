@@ -2,7 +2,7 @@
 
 각 항목은 **증상 → 원인 → 해결 → 대표가 AI에게 그대로 말할 문장** 순이다. 마지막 문장은 복사해서 Claude Code나 Codex 대화창에 그대로 붙여 넣으면 된다.
 
-읽는 순서: 증상 문구로 목차에서 찾는다. 안 맞으면 16번(못 찾았을 때)으로 간다.
+읽는 순서: 증상 문구로 목차에서 찾는다. 안 맞으면 16번(못 찾았을 때)으로 간다. **계정 가입(인증 메일·문자·요금제·GitHub 연결)** 문제는 이 파일이 아니라 `accounts.md`의 서비스별 "막히는 곳"에 있다.
 
 ---
 
@@ -105,12 +105,12 @@ git restore .
 
 ## 11. 감독 에이전트가 안 불린다
 
-- 증상: 스킬은 뜨는데 `erp-supervisor`·`erp-design-supervisor`·`erp-verifier` 를 불러도 "그런 에이전트가 없다"고 한다
+- 증상: 스킬은 뜨는데 `erp-supervisor`·`erp-design-supervisor`·`erp-verifier`·`erp-auditor` 를 불러도 "그런 에이전트가 없다"고 한다
 - 원인: 에이전트 파일이 도구 쪽에 없다. 설치기가 만드는 자리는 Claude Code `.claude/agents/*.md`, Codex `.codex/agents/*.toml` 다.
 - 해결: 설치기를 `--target both` 로 다시 돌린 뒤 대화를 새로 연다. Codex 는 껐다 켠다.
 
 > 이렇게 말하세요
-> `.claude/agents 와 .codex/agents 에 erp-supervisor, erp-design-supervisor, erp-verifier 가 있는지 확인해 주세요. 없으면 번들 설치기를 다시 돌려야 하는지 알려 주세요.`
+> `.claude/agents 와 .codex/agents 에 erp-supervisor, erp-design-supervisor, erp-verifier, erp-auditor 가 있는지 확인해 주세요. 없으면 번들 설치기를 다시 돌려야 하는지 알려 주세요.`
 
 ## 12. 작업이 끝났는데 검수 요구가 안 뜬다
 
@@ -133,6 +133,7 @@ node .owner/hooks/erp-check.mjs --tool claude --debug
 - 원인: 검수를 마친 표식(`.owner/last-check.json`)이 갱신되지 않았다. 또는 정말로 검수가 안 끝났다.
 - 해결: `indeans-erp-check` 스킬로 감독 판정 → 검증 → 보고서까지 한 번 끝낸다. 같은 작업에서 두 번 요구한 뒤에는 막지 않고 경고만 낸다.
 - 표현(문구·색)만 고친 것이면 그 이유를 한 줄로 말하고 표식을 갱신하면 된다. **훅을 지우지 않는다.**
+- **1회차 첫 검수 때 바뀐 파일 목록이 길게 나온다** → 정상이다. 아직 검수를 마친 적이 없어(`.owner/last-check.json` 없음) 기준점이 번들을 설치한 시점의 커밋이라, 그 뒤 바뀐 파일이 다 나온다. 한 번 검수를 마치면 그다음부터는 그 뒤에 바뀐 것만 나온다.
 
 ## 14. 화면 사진을 못 찍는다
 

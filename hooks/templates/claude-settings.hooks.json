@@ -5,9 +5,34 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node .owner/hooks/erp-check.mjs --tool claude",
+            "command": "node \"${CLAUDE_PROJECT_DIR}/.owner/hooks/erp-check.mjs\" --tool claude",
             "timeout": 60,
             "statusMessage": "검수가 필요한 변경인지 확인"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PROJECT_DIR}/.owner/hooks/erp-predeploy.mjs\" --tool claude",
+            "timeout": 600,
+            "statusMessage": "배포 명령이면 커밋·빌드·고정 검사 확인"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PROJECT_DIR}/.owner/hooks/erp-reminder.mjs\" --tool claude",
+            "timeout": 30
           }
         ]
       }

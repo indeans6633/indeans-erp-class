@@ -1,18 +1,19 @@
-/* 구조: 진행 보드형 — 상단 탭 + 단계 열 */
+/* 구조: 진행 보드형 — 상단 탭 + 단계 열 (화면 3개: 목록 · 상세·입력 · 오늘 현황)
+   폰의 "한 화면 한 열 + 다음 열 살짝 + 열 탭"은 공개 구현에서 본 아이디어만 썼다(코드 없음 — THIRD-PARTY-NOTICES.md). */
 
 .shell { display: grid; grid-template-rows: auto minmax(0, 1fr); min-height: 0; }
 
 .tabs {
-  display: flex; gap: var(--sp-4); padding: 0 var(--sp-5);
-  background: var(--surface); border-bottom: 1px solid var(--border);
+  display: flex; gap: var(--sp-4); padding: 0 var(--sp-5); overflow-x: auto;
+  background: var(--surface); border-bottom: var(--line-w, 1px) solid var(--border);
 }
 .tabs a {
-  display: flex; align-items: center; min-height: var(--tap);
+  display: flex; align-items: center; min-height: var(--tap); flex: none;
   color: var(--text-2); text-decoration: none;
   font-size: var(--fs-label); font-weight: var(--fw-medium);
   border-bottom: 2px solid transparent; margin-bottom: -1px;
 }
-.tabs a[aria-current="page"] { color: var(--primary); border-bottom-color: var(--primary); }
+.tabs a[aria-current="page"] { color: var(--primary-text, var(--primary)); border-bottom-color: var(--primary-text, var(--primary)); }
 
 .main { padding: var(--sp-5) var(--sp-5) var(--sp-6); display: flex; flex-direction: column; gap: var(--sp-4); align-content: start; }
 
@@ -20,7 +21,7 @@
 .board { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--sp-3); align-items: start; }
 
 .column {
-  background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--surface-2); border: var(--line-w, 1px) solid var(--border); border-radius: var(--radius);
   padding: var(--sp-3); display: flex; flex-direction: column; gap: var(--sp-2);
 }
 /* 단계마다 다른 색을 쓰지 않는다 — 단계는 위치로 구분한다 */
@@ -32,18 +33,49 @@
 .column-head .n { color: var(--text-3); }
 
 .card {
-  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--surface); border: var(--line-w, 1px) solid var(--border); border-radius: var(--radius-sm);
   box-shadow: var(--shadow);
   padding: var(--sp-3); display: grid; gap: var(--sp-1); min-height: var(--tap);
 }
-.card[aria-selected="true"] { border-color: var(--primary); background: var(--primary-soft); }
+.card[aria-current="true"] { border-color: var(--primary-text, var(--primary)); background: var(--primary-soft); }
 .card .no { font-size: var(--fs-meta); color: var(--text-3); }
 .card .name { font-weight: var(--fw-medium); line-height: var(--lh-tight); }
 .card .owner { font-size: var(--fs-label); color: var(--text-2); }
-.card .meta { display: flex; gap: var(--sp-3); font-size: var(--fs-meta); color: var(--text-3); }
+.card .meta { display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-3); font-size: var(--fs-meta); color: var(--text-3); }
 .column .empty { padding: var(--sp-4) 0; text-align: center; font-size: var(--fs-meta); color: var(--text-3); }
 
-/* 좁은 화면(폰) — 단계 열을 위에서 아래로 쌓는다 */
+/* 오늘 현황 — 보드가 아니라 한 줄짜리 목록. 줄마다 카드 한 장 */
+.todo-list { display: grid; gap: var(--sp-2); }
+.todo-list .todo {
+  background: var(--surface); border: var(--line-w, 1px) solid var(--border); border-radius: var(--radius-sm);
+  box-shadow: var(--shadow);
+}
+
+/* 열 탭 — 폰에서만 보인다. 단계 이름 + 카드 수, 누르면 그 열로 옮겨 간다 */
+.col-tabs { display: none; gap: var(--sp-2); overflow-x: auto; }
+.col-tabs a {
+  display: inline-flex; align-items: center; gap: var(--sp-1); flex: none; min-height: var(--tap); padding: 0 var(--sp-3);
+  border: var(--line-w, 1px) solid var(--border); border-radius: var(--radius-btn, var(--radius-sm));
+  background: var(--surface); color: var(--text-2); text-decoration: none; font-size: var(--fs-label); font-weight: var(--fw-medium);
+}
+.col-tabs a .n { color: var(--text-3); }
+.col-tabs a[aria-current="true"] { color: var(--primary-text, var(--primary)); border-color: var(--primary-text, var(--primary)); background: var(--primary-soft); }
+
+/* 좁은 화면(폰) — 단계 열을 옆으로 넘겨 본다: 한 화면에 한 열 + 다음 열이 살짝 보인다(스냅 스크롤).
+   폰에서는 카드를 끌어 옮기지 않는다 — 카드를 눌러 상세에서 단계를 바꾼다. */
 @media (max-width: 680px) {
-  .board { grid-template-columns: minmax(0, 1fr); }
+  .col-tabs { display: flex; }
+  .board {
+    grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 84%;   /* 고정 폭이어야 넘쳐서 옆으로 밀린다(minmax(0, …) 면 4열이 한 화면에 눌린다) */
+    overflow-x: auto; overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory; scroll-padding-inline: var(--sp-3);
+    margin: 0 calc(var(--sp-3) * -1); padding: 0 var(--sp-3) var(--sp-2);
+  }
+  .column { scroll-snap-align: start; }
+  .tabs { padding: 0 var(--sp-3); }
+  .main { padding: var(--sp-4) var(--sp-3); }
+  .todo { padding: var(--sp-2) var(--sp-3); }
+}
+@media (max-width: 680px) and (prefers-reduced-motion: no-preference) {
+  .board { scroll-behavior: smooth; }
 }

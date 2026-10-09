@@ -6,6 +6,20 @@
 -- 규칙 1: 이 파일은 한 번 실행한 뒤에는 고치지 않는다. 바꿀 것이 생기면 0002_*.sql 을 새로 만든다.
 -- 규칙 2: <꺾쇠> 부분만 우리 회사 말로 바꾼다. 표·칸 이름은 영문, 회사 말은 아래쪽 주석(comment)으로 붙인다.
 -- 규칙 3: 표를 새로 늘릴 때마다 맨 아래 "새 표 점검 3줄"을 확인한다.
+-- 규칙 4: 실행하기 전에 `npm run check`(마이그레이션 게이트)를 통과시키고, 실행한 뒤 company/data.md 실행 기록에 한 줄 적는다.
+
+-- ─────────────────────────────────────────────────────────────
+-- 0) 다시 실행 막기 — 권한 단계가 이미 적용된 데이터베이스에서는 이 파일을 다시 실행하지 않는다.
+--    아래의 넓은 규칙(회사 명단에 있으면 전부)이 되살아나면, 좁혀 둔 권한이 다시 넓어진다(규칙은 더할수록 넓어진다).
+--    권한 단계 전에는 몇 번을 다시 실행해도 같은 결과다(만들 규칙을 먼저 지우고 다시 만든다).
+-- ─────────────────────────────────────────────────────────────
+do $guard$
+begin
+  if exists (select 1 from pg_proc where proname = 'my_role' and pronamespace = 'public'::regnamespace) then
+    raise exception '0001 은 이미 실행됐고 권한 단계가 적용돼 있습니다(my_role 함수 있음) — 다시 실행하면 좁혀 둔 권한이 넓어집니다. 표를 바꾸려면 다음 번호 파일을 만드세요.';
+  end if;
+end
+$guard$;
 
 -- ─────────────────────────────────────────────────────────────
 -- 1) 회사 — 지금은 우리 회사 한 곳이다. 나중에 지점이 생겨도 이 구조를 쓴다.
@@ -33,6 +47,7 @@ create table if not exists app_users (
 );
 comment on table app_users is '앱 사용자 명단';
 comment on column app_users.active is '사용 안 함으로 끌 때 false. 계정을 지우지 말고 이 칸을 내린다.';
+create index if not exists app_users_company_idx on app_users (company_id);
 
 -- ─────────────────────────────────────────────────────────────
 -- 3) 판정 함수 — "이 사람은 어느 회사 사람인가"
@@ -64,9 +79,8 @@ create table if not exists jobs (
   customer    text,
   status      text not null default 'open',
   due_date    date,
-  -- 금액 칸 — company/structure.md 의 "이번에 만들지 않을 것"에 금액 항목이 있으면 이 줄을 지우고 시작한다.
-  -- 그대로 두면 미루기로 한 칸이 조용히 들어와, 화면에도 입력 칸이 생기고 나중에 빼기 어려워진다.
-  amount      numeric(14,2),
+  -- 금액 칸은 여기 넣지 않는다. 지금은 회사 사람 모두가 같은 줄을 보므로, 금액을 넣으면 직원에게도 그대로 보인다.
+  -- 권한 단계(indeans-erp-people)에서 볼 사람을 나눈 뒤 indeans-erp-money 가 받을 돈·줄 돈을 별도 표로 만든다.
   memo        text,
   created_at  timestamptz not null default now(),
   updated_at  timestamptz not null default now()
@@ -78,7 +92,6 @@ comment on column jobs.title     is '<건 이름>';
 comment on column jobs.customer  is '<거래처 · 고객 이름>';
 comment on column jobs.status    is '<상태: 접수 / 진행 / 완료>';
 comment on column jobs.due_date  is '<예정일 · 납기>';
-comment on column jobs.amount    is '<금액(원)>';   -- 위에서 금액 칸을 지웠으면 이 줄도 함께 지운다
 comment on column jobs.memo      is '<메모>';
 
 -- 자주 쓰는 정렬을 빠르게
@@ -113,11 +126,19 @@ revoke all on table companies, app_users, jobs from anon;
 grant select, insert, update, delete on jobs to authenticated;
 grant select on companies, app_users to authenticated;
 
+-- 다시 실행해도 "이미 있습니다" 로 멈추지 않게, 만들 규칙을 먼저 지운다(처음 실행이면 "없어서 건너뜁니다" 안내만 나온다).
+drop policy if exists companies_read on companies;
+drop policy if exists app_users_read on app_users;
+drop policy if exists jobs_read      on jobs;
+drop policy if exists jobs_insert    on jobs;
+drop policy if exists jobs_update    on jobs;
+drop policy if exists jobs_delete    on jobs;
+
 -- 통과 규칙: 로그인했고, 우리 회사 사람이면 통과
 create policy companies_read on companies for select to authenticated
   using (id = my_company());
 
--- 지금은 우리 회사 사람끼리 서로 보인다. indeans-erp-people 로 역할을 나눌 때
+-- 지금은 우리 회사 사람끼리 서로 보인다. 권한 단계(indeans-erp-people)에서 역할을 나눌 때
 -- 이 규칙을 먼저 확인하고 필요하면 좁힌다 — 나중에 좁은 규칙을 새로 추가해도
 -- 여기 있는 넓은 규칙이 그대로 통과시킨다(규칙은 더해질수록 넓어진다).
 create policy app_users_read on app_users for select to authenticated
@@ -149,6 +170,12 @@ create policy jobs_delete on jobs for delete to authenticated
 --        c.id, '<대표 이름>', 'owner'
 --   from companies c
 --  where c.name = '<회사 이름>';
+--
+-- 직원 계정(2회차 마무리 — 직원이 폰으로 넣고 다시 보는 확인)도 같은 방식으로 넣는다. 역할만 'staff'.
+-- insert into app_users (id, company_id, name, role)
+-- select '<직원 계정 User UID>'::uuid, c.id, '<직원 호칭 — 실명 대신 역할로>', 'staff'
+--   from companies c
+--  where c.name = '<회사 이름>';
 
 -- ─────────────────────────────────────────────────────────────
 -- 8) 확인 — 여기서 보이는 것은 증거가 아니다
@@ -162,3 +189,9 @@ create policy jobs_delete on jobs for delete to authenticated
 --  1. 누구 것인지 알려 주는 칸(company_id 등)이 있나?
 --  2. 읽기 규칙이 그 칸을 보고 판정하나? (역할 이름만 보고 통과시키지 않나)
 --  3. 같은 데이터의 다른 경로(파일 보관함·내보내기·알림)에도 같은 규칙을 걸었나?
+
+-- ─────────────────────────────────────────────────────────────
+-- 9) 앱이 새 표를 바로 알아보게 — 파일마다 맨 끝에 둔다
+--    빠뜨리면 앱에서 "Could not find the table … in the schema cache" 가 날 수 있다.
+-- ─────────────────────────────────────────────────────────────
+notify pgrst, 'reload schema';

@@ -6,7 +6,7 @@
 //   --caption "설명"   바로 앞 --shot 의 설명(생략 가능)
 //   --slug 이름        파일 이름 뒷부분(생략하면 제목에서 만든다)
 //   --out reports      저장 폴더(기본 reports)
-//   --date 2026-09-18  날짜(기본 오늘)
+//   --date 2026-09-18  날짜(기본 오늘 — 이 컴퓨터의 시간대 기준)
 //   --no-open          만들기만 하고 열지 않는다
 //
 // 본문은 markdown 을 조금만 알아듣는다: ## 제목 · 목록(-, 1.) · 표 · > 인용 · **굵게** · `코드` · ---
@@ -46,7 +46,9 @@ if (bodyArg === '-') {
 }
 body = body.replace(/^\uFEFF/, '').replaceAll('\r\n', '\n')
 
-const date = flag('--date', new Date().toISOString().slice(0, 10))
+// 날짜는 이 컴퓨터의 시간대로 적는다. toISOString 은 세계 표준시라 한국에서 오전 9시 전에는 전날 날짜가 된다(2026-10-09 리허설).
+const localYmd = (d = new Date()) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10)
+const date = flag('--date', localYmd())
 if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { console.error('--date 는 2026-09-18 형식입니다.'); process.exit(1) }
 const slugify = (s) => s.trim().replace(/\s+/g, '-').replace(/[^\p{L}\p{N}\-_]+/gu, '').replace(/-{2,}/g, '-').replace(/^-|-$/g, '').slice(0, 60)
 const slug = slugify(flag('--slug') || title) || 'report'
@@ -171,7 +173,7 @@ code{background:var(--accent-soft); border-radius:5px; padding:1px 5px; font-siz
 pre{background:#fff; border:1px solid var(--line); border-radius:12px; padding:14px 16px;
   overflow-x:auto; font-size:13px; line-height:1.6}
 blockquote{margin:0 0 14px; padding:10px 16px; background:var(--accent-soft);
-  border-left:3px solid var(--accent); border-radius:0 10px 10px 0; color:#42392f}
+  border:1px solid var(--line); border-radius:10px; color:#42392f}
 .tw{overflow-x:auto; margin:0 0 16px}
 table{border-collapse:collapse; width:100%; background:var(--card);
   border:1px solid var(--line); border-radius:12px; overflow:hidden; font-size:14px}

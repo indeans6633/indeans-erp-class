@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>○○상사 — 진행 보드형 목업</title>
+<!-- 목업: 진행 보드형. 화면 3개(목록 · 상세·입력 · 오늘 현황)가 data-screen 으로 나뉘어 들어 있다.
+     값(색·글자·간격·모서리·선 굵기·그림자)은 토큰 하나에서만 온다 — 미리 보기에서는 mock.js 가 고른 조합의 토큰을 계산해 넣는다.
+     뼈대: base.css(공통) + layout-board.css(이 구조). 초안은 이 파일의 클래스·배치를 이어받는다.
+     머리의 세 스크립트(../app/color-engine.js · design-rules.js · mock.js)는 미리 보기 전용이라 초안에 가져가지 않는다.
+     앱은 src/main.tsx 에서 tokens.css·base.css·layout.css 를 불러온다. 시트 여닫기·열 탭 이동은 앱 코드로 다시 만든다. -->
+<script src="../app/color-engine.js"></script>
+<script src="../app/design-rules.js"></script>
+<script src="../app/mock.js"></script>
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="layout-board.css">
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand"><span class="name">○○상사</span><span class="kind">업무 관리</span></div>
+    <div class="who">
+      <span class="me">김○○ 대표</span>
+      <button class="btn btn-primary" type="button" data-sheet="sheet-new">건 등록</button>
+    </div>
+  </header>
+  <div class="shell">
+    <nav class="tabs" aria-label="메뉴">
+      <a href="#s=list" data-go="list" aria-current="page">건 목록</a>
+      <a href="#s=today" data-go="today">오늘 할 일</a>
+      <a href="#s=list" data-go="">기준 정보</a>
+    </nav>
+
+    <main class="main" data-screen="list">
+      <div class="head">
+        <h1>진행 중인 건</h1>
+        <span class="count">6건</span>
+        <span class="today">오늘 09-18</span>
+      </div>
+      <nav class="col-tabs" aria-label="단계로 가기">
+        <a href="#col-1" data-col="col-1" aria-current="true">접수 <span class="n num">1</span></a>
+        <a href="#col-2" data-col="col-2">진행 <span class="n num">2</span></a>
+        <a href="#col-3" data-col="col-3">확인 <span class="n num">2</span></a>
+        <a href="#col-4" data-col="col-4">완료 <span class="n num">1</span></a>
+      </nav>
+      <div class="board">
+        <section class="column" id="col-1" aria-label="접수">
+          <div class="column-head"><span>접수</span><span class="n num">1</span></div>
+          <article class="card">
+            <span class="no num">24-101</span>
+            <a class="name ellip" href="#s=detail" data-go="detail">봄 정기 주문</a>
+            <span class="owner ellip">김○○</span>
+            <span class="meta"><span>받은 날 <span class="num">09-14</span></span><span>마감일 <span class="num">09-20</span></span></span>
+          </article>
+        </section>
+        <section class="column" id="col-2" aria-label="진행">
+          <div class="column-head"><span>진행</span><span class="n num">2</span></div>
+          <article class="card" aria-current="true">
+            <span class="no num">24-102</span>
+            <a class="name ellip" href="#s=detail" data-go="detail">매장 납품 건</a>
+            <span class="owner ellip">이○○</span>
+            <span class="meta"><span>받은 날 <span class="num">09-13</span></span><span>마감일 <span class="num">09-19</span></span></span>
+          </article>
+          <article class="card">
+            <span class="no num">24-103</span>
+            <a class="name ellip" href="#s=detail" data-go="detail">추가 물량 요청</a>
+            <span class="owner ellip">김○○</span>
+            <span class="meta"><span>받은 날 <span class="num">09-12</span></span><span>마감일 <span class="num">09-18</span></span></span>
+          </article>
+        </section>
+        <section class="column" id="col-3" aria-label="확인">
+          <div class="column-head"><span>확인</span><span class="n num">2</span></div>
+          <article class="card">
+            <span class="no num">24-104</span>
+            <a class="name ellip" href="#s=detail" data-go="detail">재고 보충</a>
+            <span class="owner ellip">박○○</span>
+            <span class="meta"><span>받은 날 <span class="num">09-11</span></span><span>마감일 <span class="num">09-18</span></span></span>
+          </article>
+          <article class="card">
+            <span class="no num">24-105</span>
+            <a class="name ellip" href="#s=detail" data-go="detail">견본 발송</a>
+            <span class="owner ellip">이○○</span>
+            <span class="meta"><span>받은 날 <span class="num">09-10</span></span><span><span class="late">지남</span> 마감일 <span class="num">09-17</span></span></span>
+          </article>
+        </section>
+        <section class="column" id="col-4" aria-label="완료">
+          <div class="column-head"><span>완료</span><span class="n num">1</span></div>
+          <article class="card">
+            <span class="no num">24-106</span>
+            <a class="name ellip" href="#s=detail" data-go="detail">월말 마감 정리</a>
+            <span class="owner ellip">박○○</span>
+            <span class="meta"><span>받은 날 <span class="num">09-08</span></span><span>마감일 <span class="num">09-15</span></span></span>
+          </article>
+        </section>
+      </div>
+      <p class="note">예시 데이터입니다. 실제 화면에는 회사에서 쓰는 말과 항목이 들어갑니다.</p>
+    </main>
+
+    <main class="main" data-screen="detail" hidden>
+      <a class="back" href="#s=list" data-go="list">← 건 목록</a>
+      <div class="head">
+        <h1>매장 납품 건</h1>
+        <span class="count">24-102</span>
+      </div>
+      <section class="panel narrow" aria-label="건 내용">
+        <div class="panel-body">
+          <div class="next">
+            <div class="steps" aria-label="단계">
+              <span class="step">접수</span><span class="sep" aria-hidden="true">→</span>
+              <span class="step" aria-current="step">진행</span><span class="sep" aria-hidden="true">→</span>
+              <span class="step">확인</span><span class="sep" aria-hidden="true">→</span>
+              <span class="step">완료</span>
+            </div>
+            <button class="btn btn-primary" type="button">확인 요청</button>
+          </div>
+          <p class="next-label">다음 할 일: 확인 요청 — 누르면 단계가 '확인'으로 넘어갑니다.</p>
+          <form class="form">
+            <div class="field">
+              <label for="b-name">건 이름</label>
+              <input id="b-name" name="name" type="text" value="매장 납품 건" autocomplete="off">
+            </div>
+            <div class="field">
+              <label for="b-owner">담당</label>
+              <select id="b-owner" name="owner">
+                <option>김○○</option>
+                <option selected>이○○</option>
+                <option>박○○</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="b-got">받은 날</label>
+              <input id="b-got" name="got" type="text" inputmode="numeric" value="09-13" autocomplete="off">
+            </div>
+            <div class="field">
+              <label for="b-due">마감일</label>
+              <input id="b-due" name="due" type="text" inputmode="numeric" value="09-19" autocomplete="off">
+              <span class="hint">월-일로 적습니다. 예: 09-19</span>
+            </div>
+            <div class="field">
+              <label for="b-memo">메모</label>
+              <textarea id="b-memo" name="memo">다음 주 초에 나머지 물량 확인</textarea>
+            </div>
+            <div class="form-acts">
+              <button class="btn btn-danger" type="button">이 건 지우기</button>
+              <div class="right">
+                <button class="btn" type="button">취소</button>
+                <button class="btn" type="submit">내용 저장</button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </section>
+      <p class="note">예시 데이터입니다. 실제 화면에는 회사에서 쓰는 말과 항목이 들어갑니다.</p>
+    </main>
+
+    <main class="main" data-screen="today" hidden>
+      <div class="head">
+        <h1>오늘 할 일</h1>
+        <span class="count">3건</span>
+        <span class="today">오늘 09-18</span>
+      </div>
+      <section class="todo-list" aria-label="오늘 할 일">
+        <div class="todo">
+          <div class="what">
+            <a class="name ellip" href="#s=detail" data-go="detail">견본 발송</a>
+            <span class="meta"><span class="num">24-105</span><span>이○○</span><span class="stage">확인</span><span><span class="late">지남</span> 마감일 <span class="num">09-17</span></span></span>
+          </div>
+          <button class="btn" type="button">확인 완료</button>
+        </div>
+        <div class="todo">
+          <div class="what">
+            <a class="name ellip" href="#s=detail" data-go="detail">추가 물량 요청</a>
+            <span class="meta"><span class="num">24-103</span><span>김○○</span><span class="stage">진행</span><span>마감일 <span class="num">09-18</span></span></span>
+          </div>
+          <button class="btn" type="button">확인 요청</button>
+        </div>
+        <div class="todo">
+          <div class="what">
+            <a class="name ellip" href="#s=detail" data-go="detail">재고 보충</a>
+            <span class="meta"><span class="num">24-104</span><span>박○○</span><span class="stage">확인</span><span>마감일 <span class="num">09-18</span></span></span>
+          </div>
+          <button class="btn" type="button">확인 완료</button>
+        </div>
+      </section>
+      <h2 class="group-h">이번 주 끝낸 것 <span class="n">1</span></h2>
+      <section class="todo-list is-done" aria-label="이번 주 끝낸 것">
+        <div class="todo">
+          <div class="what">
+            <a class="name ellip" href="#s=detail" data-go="detail">월말 마감 정리</a>
+            <span class="meta"><span class="num">24-106</span><span>박○○</span><span class="stage stage-done">완료</span><span>마감일 <span class="num">09-15</span></span></span>
+          </div>
+        </div>
+      </section>
+      <h2 class="group-h">오늘 들어온 건 <span class="n">0</span></h2>
+      <div class="empty">
+        <p class="empty-t">오늘 들어온 건이 없습니다</p>
+        <p class="empty-d">새 건은 위의 '건 등록'으로 넣습니다. 넣으면 여기에 먼저 보입니다.</p>
+      </div>
+      <p class="note">예시 데이터입니다. 실제 화면에는 회사에서 쓰는 말과 항목이 들어갑니다.</p>
+    </main>
+  </div>
+</div>
+
+<dialog class="sheet" id="sheet-new" aria-labelledby="sheet-new-h">
+  <div class="sheet-grip" aria-hidden="true"></div>
+  <div class="sheet-head">
+    <h2 id="sheet-new-h">새 건 등록</h2>
+    <button class="btn" type="button" data-close>닫기</button>
+  </div>
+  <form class="sheet-body form">
+    <div class="field">
+      <label for="n-name">건 이름</label>
+      <input id="n-name" name="name" type="text" autocomplete="off">
+    </div>
+    <fieldset class="chips">
+      <legend>담당</legend>
+      <label class="chip"><input type="radio" name="n-owner" value="김○○" checked><span>김○○</span></label>
+      <label class="chip"><input type="radio" name="n-owner" value="이○○"><span>이○○</span></label>
+      <label class="chip"><input type="radio" name="n-owner" value="박○○"><span>박○○</span></label>
+    </fieldset>
+    <fieldset class="chips">
+      <legend>처음 단계</legend>
+      <label class="chip"><input type="radio" name="n-stage" value="접수" checked><span>접수</span></label>
+      <label class="chip"><input type="radio" name="n-stage" value="진행"><span>진행</span></label>
+      <label class="chip"><input type="radio" name="n-stage" value="확인"><span>확인</span></label>
+      <label class="chip"><input type="radio" name="n-stage" value="완료"><span>완료</span></label>
+    </fieldset>
+    <div class="field">
+      <label for="n-due">마감일</label>
+      <input id="n-due" name="due" type="text" inputmode="numeric" autocomplete="off">
+      <span class="hint">월-일로 적습니다. 예: 09-19</span>
+    </div>
+  </form>
+  <div class="sheet-acts">
+    <button class="btn" type="button" data-close>취소</button>
+    <button class="btn btn-primary" type="button" data-close>등록</button>
+  </div>
+</dialog>
+</body>
+</html>

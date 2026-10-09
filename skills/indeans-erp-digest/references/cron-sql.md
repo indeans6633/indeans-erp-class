@@ -3,7 +3,9 @@
 여기 있는 SQL 은 **뼈대**입니다. `<업무표>`·`<상태칸>`·`<관리 단위>` 처럼 꺾쇠로 싸인 곳은 `company/data.md` 에 적힌 **우리 회사 표·칸 이름**으로 바꿔 넣습니다. 바꾸지 않고 실행하면 "그런 표가 없다"는 오류가 납니다.
 
 읽는 순서와 실행 순서가 조금 다릅니다. 시각 변환을 먼저 읽어 두는 게 편해서 예약(4절)을 함수(5절)보다 앞에 뒀습니다.
-**실행은 1 → 2 → 3 → 5 → 4 → 6 순서**입니다(함수를 만든 뒤 예약을 겁니다).
+**실행은 1 → 2 → 3 → 5 → 6 → 4 → 9 순서**입니다(함수를 만든 뒤 예약을 겁니다). 8절(확인 기록)은 확인이 꼭 필요한 공지가 있을 때만 합니다.
+
+마이그레이션 파일에 옮길 때는 실행 전에 `npm run check`(마이그레이션 게이트)를 돌립니다. 2·3절의 두 표는 **일부러 정책을 두지 않는** 표라서 SQL 첫 줄에 허용 주석(`-- gate-allow: G2 …`)이 들어 있습니다 — 지우지 않습니다.
 
 무엇을 만드는지 한 문단으로: 데이터가 들어 있는 쪽(Supabase)에 **시계**(pg_cron)와 **바깥으로 보내는 입**(pg_net)을 켜고, 정해진 시각에 세어 문장을 만들어 채널로 보내는 함수를 답니다. 보낸 기록은 표 하나에 남겨 "안 온 날"을 알 수 있게 합니다.
 
@@ -39,6 +41,7 @@ select n.nspname as 스키마, p.proname as 함수
 **중요: 값을 넣는 SQL 은 대시보드 SQL Editor 에서 한 번만 실행하고, 마이그레이션 파일에는 넣지 않습니다.** 파일에 적으면 저장소에 그대로 올라갑니다.
 
 ```sql
+-- gate-allow: G2 app_secret (비밀값 표 — 서버 함수만 읽는다. 정책을 일부러 두지 않는다)
 create table if not exists public.app_secret (
   key        text primary key,
   value      text        not null,
@@ -73,6 +76,7 @@ Supabase 에는 값을 암호화해 두는 보관함(Vault)이 따로 있습니�
 ## 3. 발송 기록 표
 
 ```sql
+-- gate-allow: G2 report_log (발송 기록 — 서버 함수만 쓰고 읽는다. 정책을 일부러 두지 않는다)
 create table if not exists public.report_log (
   id          bigint generated always as identity primary key,
   report_key  text        not null,              -- 보고 이름(예: owner_daily)
@@ -121,7 +125,7 @@ revoke all on table public.report_log from anon, authenticated;
 | 월~토 09:00 (한국) | `0 0 * * 1-6` |
 | 월~토 08:00 (한국) | `0 23 * * 0-5` (일~금 23시) |
 
-토요일 오전까지 일하는 회사가 적지 않습니다(제조·정비·시공 등). **토요일을 넣을 때는 요일 칸이 한 칸씩 늘어나는 게 아니라 통째로 하루 앞으로 밀린다**는 점만 다시 봅니다 — 08:00 은 `0-5`(일~금), 09:00 은 `1-6`(월~토)입니다.
+토요일 오전까지 일하는 회사가 적지 않습니다(제조·정비·물류 등). **토요일을 넣을 때는 요일 칸이 한 칸씩 늘어나는 게 아니라 통째로 하루 앞으로 밀린다**는 점만 다시 봅니다 — 08:00 은 `0-5`(일~금), 09:00 은 `1-6`(월~토)입니다.
 
 요일 계산이 헷갈리면 **매시간 돌리고 함수 안에서 시각을 검사하는 방법**을 씁니다(5절 맨 위의 검사 두 줄).
 
@@ -254,6 +258,8 @@ revoke all on function public.send_owner_digest() from public, anon, authenticat
 
 두 창구에 모두 보내려면 같은 함수 안에서 (1)~(5) 를 채널 값만 바꿔 한 번 더 하거나, 함수를 하나 더 만들어 예약을 둘 겁니다. **하나가 실패해도 다른 하나는 가야 하니 기록 줄은 채널마다 따로 남깁니다.**
 
+**직원용 보고**는 함수를 따로 만듭니다(`send_staff_digest`). 같은 뼈대에서 `report_key` 를 `'staff_daily'` 로, 읽는 비밀값 이름을 직원용(`digest_discord_url_staff` 등)으로, 문장을 `company/digest.md` 의 직원용 문장으로 바꿉니다. 직원용 문장에는 `company/channel.md` 라우팅 표의 '보내지 않는 것'을 넣지 않습니다. 대표용 함수를 고쳐 두 방에 같은 문장을 보내지 않습니다.
+
 ## 6. 발송 기록·응답 보는 법
 
 보내기는 요청만 걸고 끝나므로, 도착 여부는 응답을 따로 대조합니다.
@@ -309,3 +315,81 @@ select id, status_code, left(coalesce(error_msg, content, ''), 200) as 응답
 | 9시간 밀려 온다 | 한국 시간을 그대로 적었다 | 4절 변환표대로 고친다 |
 | 아무 날도 안 온다 | 함수가 '보낼 시각이 아님'만 돌려준다 | 정시 예약인데 (0) 검사를 지우지 않았다 |
 | 0건인 날만 안 온다 | 0일 때 중간에 멈추게 고쳤다 | 0도 보내도록 되돌린다 |
+| `npm run check` 가 G2 로 막는다 | 2·3절 표의 허용 주석을 지웠다 | 표 위의 `-- gate-allow: G2 …` 줄을 되살린다 |
+
+## 8. 확인 기록 — 읽었다는 표시가 꼭 필요한 공지만
+
+채널 메시지에는 "읽음" 표시가 없습니다. 꼭 읽어야 하는 공지(규정 변경·안전 공지)는 **앱 안에서** 확인 버튼을 누르게 하고, 누른 기록을 표에 남깁니다. 운영 보고에는 **확인 안 한 사람 수**만 싣습니다(이름은 앱 안에서 대표만 봅니다).
+
+```sql
+create table if not exists public.notices (
+  id          uuid primary key default gen_random_uuid(),
+  company_id  uuid not null default public.my_company() references public.companies(id),
+  title       text not null,                       -- 화면에 보이는 제목(고객 정보·금액 금지)
+  target_role text not null default 'staff',       -- 누가 확인해야 하나
+  created_at  timestamptz not null default now()
+);
+create index if not exists notices_company_idx on public.notices (company_id, created_at desc);
+alter table public.notices enable row level security;
+revoke all on table public.notices from anon;
+grant select, insert on table public.notices to authenticated;
+create policy notices_read on public.notices for select to authenticated
+  using (company_id = public.my_company());
+create policy notices_write on public.notices for insert to authenticated
+  with check (company_id = public.my_company() and coalesce(public.my_role(),'') = 'owner');
+
+create table if not exists public.notice_ack (
+  notice_id uuid not null references public.notices(id) on delete cascade,
+  user_id   uuid not null default auth.uid() references public.app_users(id),
+  acked_at  timestamptz not null default now(),
+  primary key (notice_id, user_id)                 -- 한 사람이 한 공지를 두 번 확인해도 한 줄
+);
+create index if not exists notice_ack_user_idx on public.notice_ack (user_id);
+alter table public.notice_ack enable row level security;
+revoke all on table public.notice_ack from anon;
+grant select, insert on table public.notice_ack to authenticated;
+create policy notice_ack_insert on public.notice_ack for insert to authenticated
+  with check (user_id = auth.uid() and public.my_role() is not null);
+create policy notice_ack_read on public.notice_ack for select to authenticated
+  using (user_id = auth.uid() or coalesce(public.my_role(),'') = 'owner');
+
+notify pgrst, 'reload schema';
+```
+
+대표용 발송 함수에 한 줄을 더합니다(최근 3일 안의 공지만 세어, 같은 공지가 최대 3번까지만 보고에 나오게 합니다).
+
+```sql
+  select count(*) into n_unacked
+    from public.notices n
+    join public.app_users u on u.company_id = n.company_id and u.role = n.target_role and u.active
+   where n.created_at > now() - interval '3 days'
+     and not exists (select 1 from public.notice_ack a where a.notice_id = n.id and a.user_id = u.id);
+  -- 문장: '확인 안 한 공지: ' || n_unacked || '명'
+```
+
+## 9. 보관 기간 정리 — 기록에도 수명이 있다
+
+발송 기록·확인 기록은 계속 쌓입니다. **화면에서 오래된 줄을 안 보이게 하는 것은 지운 것이 아닙니다.** 표가 커지면 조회가 느려지고, 필요 없는 기록을 오래 들고 있는 것 자체가 부담입니다. 예약으로 정리합니다.
+
+```sql
+create or replace function public.cleanup_report_log()
+returns void
+language sql
+security definer
+set search_path = public, pg_temp
+as $$
+  delete from public.report_log where created_at < now() - interval '90 days';
+  -- 8절의 공지 표를 만들었을 때만 아래 줄을 남긴다(확인 기록은 함께 지워진다 — on delete cascade).
+  delete from public.notices where created_at < now() - interval '90 days';
+  -- 예약 실행 기록도 쌓인다. 7일보다 오래된 것은 지운다.
+  delete from cron.job_run_details where end_time < now() - interval '7 days';
+$$;
+
+revoke all on function public.cleanup_report_log() from public, anon, authenticated;
+
+-- 한국 새벽 3시 30분 = 세계 표준시 전날 18시 30분
+select cron.schedule('report-log-cleanup', '30 18 * * *', $$select public.cleanup_report_log();$$);
+```
+
+- 공지 표를 안 만들었으면 `notices` 줄을 지우고 만든다(없는 표를 가리키면 함수가 만들어지지 않는다).
+- 보관 기간(90일)은 대표가 정한다. 바꾸면 `company/digest.md` 에 한 줄로 적는다.

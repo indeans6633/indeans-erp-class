@@ -20,7 +20,9 @@
 
 ---
 
-## 2. 기본 역할 3종
+## 2. 기본 역할 — 둘로 시작하고, 고객은 필요할 때만
+
+기본은 `owner`·`staff` 두 개다. `client` 는 고객이 직접 로그인하는 사업일 때만 더한다(SKILL.md 3-4).
 
 | 역할 값 | 기본 이름 | 보통 보는 것 | 보통 못 보는 것 |
 |---|---|---|---|
@@ -46,18 +48,16 @@
 
 ### 3-1. 역할 표
 
+2회차 `0001` 이 만든 명단(`app_users` — 계정·회사·이름·역할·활성)을 그대로 쓰고, 역할 값에 허용 목록만 건다.
+
 ```sql
-create table app_users (
-  id uuid primary key references auth.users(id) on delete cascade,
-  name text not null,
-  role text not null check (role in ('owner','staff','client')),
-  active boolean not null default true,
-  created_at timestamptz not null default now()
-);
-alter table app_users enable row level security;
+alter table app_users alter column role set not null;
+alter table app_users add constraint app_users_role_check
+  check (role in ('owner','staff'));   -- 템플릿은 이 목록이 없을 때만 만든다
 ```
 
-- `role` 은 `not null`. **비워 둘 수 있게 만들면 그 계정이 검사를 통과한다**(아래 4번).
+- `role` 은 `not null` + 허용 목록. **비워 둘 수 있게 두면 그 계정이 거부 목록 검사를 통과한다**(아래 4번).
+- 템플릿(`assets/role-check-template.sql`)은 허용 목록이 **이미 있으면 그대로 둔다.** 고객 역할을 더한 뒤 권한 파일을 다시 실행해도 고객 역할이 목록에서 빠지지 않고, 등록된 고객 계정 때문에 실행이 멈추지 않는다. 역할을 늘리거나 줄일 때는 그 역할의 다음 번호 파일에서 목록을 지우고 새 목록으로 만든다(템플릿 맨 아래 고객 블록이 그 예다).
 - `active` 는 차단용. 지우지 않고 막는 것이 기본이다.
 
 ### 3-2. 판정 함수
@@ -85,18 +85,18 @@ grant execute on function my_role() to authenticated;   -- 이 줄을 빼면 안
 alter table jobs enable row level security;          -- 먼저 전부 잠근다
 
 create policy jobs_read on jobs for select to authenticated
-using (
-  coalesce(my_role(),'') in ('owner','staff')
-  or (my_role() = 'client' and client_id = auth.uid())
-);
+using (company_id = my_company() and coalesce(my_role(),'') in ('owner','staff'));
 
-create policy jobs_write on jobs for insert to authenticated
-with check (coalesce(my_role(),'') in ('owner','staff'));
+create policy jobs_insert on jobs for insert to authenticated
+with check (company_id = my_company() and coalesce(my_role(),'') in ('owner','staff'));
 
 create policy jobs_update on jobs for update to authenticated
-using (coalesce(my_role(),'') in ('owner','staff'))
-with check (coalesce(my_role(),'') in ('owner','staff'));
+using (company_id = my_company() and coalesce(my_role(),'') in ('owner','staff'))
+with check (company_id = my_company() and coalesce(my_role(),'') in ('owner','staff'));
 ```
+
+- 소속 검사(`company_id = my_company()`)와 역할 검사를 **같이** 쓴다. 한쪽만 쓰면 그쪽이 비는 날 새거나 막힌다.
+- 고객 역할은 기본 규칙에 섞지 않는다. 고객을 만들기로 했을 때 **다음 번호 파일 하나에** 고객 칸(`client_id`)과 고객 읽기 규칙(`jobs_read_client`)을 함께 만든다(`assets/role-check-template.sql` 맨 아래 블록). 칸 없이 규칙만 만들면 실행이 멈추고, 규칙 없이 칸만 만들면 고객이 아무것도 못 본다.
 
 - `using` 은 읽기·삭제에, `with check` 는 넣기·고치기에 적용된다. 고치기는 둘 다 필요하다.
 - `for all` 로 쓴 규칙은 **읽기에도 걸린다.** 나중에 좁은 읽기 규칙을 추가해도 넓은 `for all` 이 그것을 덮는다. 새 규칙을 좁힐 때는 같은 표에 `for all` 이 있는지 먼저 본다.
@@ -107,6 +107,7 @@ with check (coalesce(my_role(),'') in ('owner','staff'));
 ```sql
 create table change_log (
   id uuid primary key default gen_random_uuid(),
+  company_id uuid not null default my_company() references companies(id),
   target text not null,          -- 무엇 (예: 'jobs')
   target_id uuid,
   action text not null,          -- 무슨 일 (예: 'status_change')
@@ -117,13 +118,15 @@ create table change_log (
 );
 alter table change_log enable row level security;
 create policy change_log_read on change_log for select to authenticated
-using (coalesce(my_role(),'') = 'owner');
+using (company_id = my_company() and coalesce(my_role(),'') = 'owner');
 create policy change_log_insert on change_log for insert to authenticated
-with check (actor_id = auth.uid());
+with check (company_id = my_company() and actor_id = auth.uid() and my_role() is not null);
 ```
 
+- 기록에도 **회사 칸**을 둔다. 회사 칸이 없으면 같은 데이터베이스를 쓰는 다른 회사 대표가 이 회사의 바뀌기 전·후 값을 읽는다.
+
 - 기록은 **고치거나 지울 수 없게** 둔다(수정·삭제 규칙을 만들지 않으면 아무도 못 한다).
-- 기록 대상은 인터뷰 3-4에서 고른 두세 가지만.
+- 기록 대상은 인터뷰 3-5에서 고른 두세 가지만.
 
 ### 3-5. 로그인 (앱 쪽)
 
@@ -160,3 +163,50 @@ coalesce(my_role(),'') in ('owner','staff')
 -- 나쁨
 my_role() <> 'client'
 ```
+
+---
+
+## 5. 적용한 뒤 확인 질의 (한 덩어리)
+
+SQL Editor 는 마지막 한 문장의 결과만 보여 준다. 그래서 점검을 **한 결과 표**로 모았다. 이 덩어리만 따로 붙여 넣고 Run 한다(마이그레이션 파일에는 넣지 않는다). **걸린_것 칸이 전부 비어 있어야(NULL) 통과**다. ②에 비밀값·발송 기록 표(`app_secret`·`report_log`)가 나오는 것은 일부러다.
+
+```sql
+select '① 잠금 꺼진 표' as 점검, string_agg(relname, ', ') as 걸린_것
+  from pg_class where relnamespace = 'public'::regnamespace and relkind = 'r' and not relrowsecurity
+union all
+select '② 규칙이 하나도 없는 표(아무도 못 봄)', string_agg(c.relname, ', ')
+  from pg_class c
+ where c.relnamespace = 'public'::regnamespace and c.relkind = 'r' and c.relrowsecurity
+   and not exists (select 1 from pg_policies p where p.schemaname = 'public' and p.tablename = c.relname)
+union all
+select '③ 로그인 안 한 사람(anon·public)에게 걸린 규칙', string_agg(tablename || '.' || policyname, ', ')
+  from pg_policies where schemaname = 'public' and roles && array['public','anon']::name[]
+union all
+select '④ 판정 함수를 로그인 사용자가 못 부름', string_agg(proname, ', ')
+  from pg_proc where pronamespace = 'public'::regnamespace and proname in ('my_role','my_company')
+   and not has_function_privilege('authenticated', oid, 'execute')
+union all
+select '⑤ search_path 없는 권한 높은 함수', string_agg(proname, ', ')
+  from pg_proc where pronamespace = 'public'::regnamespace and prosecdef
+   and not exists (select 1 from unnest(coalesce(proconfig, '{}'::text[])) c where c like 'search_path=%')
+union all
+select '⑥ 로그인 안 한 사람이 부를 수 있는 권한 높은 함수', string_agg(proname, ', ')
+  from pg_proc where pronamespace = 'public'::regnamespace and prosecdef
+   and has_function_privilege('anon', oid, 'execute');
+```
+
+SQL 확인은 **도달 검증이 아니다.** 함수의 답이 맞아도 실제 사용자가 그 함수에 닿지 못하면 화면이 통째로 빈다. 마지막 확인은 언제나 역할별 계정으로 앱을 열어 보는 것이다(SKILL.md 9단계).
+
+---
+
+## 6. 권한 높은 함수(security definer) — 가드 세 줄
+
+`security definer` 함수는 **만든 사람(관리자) 권한으로** 돈다. 행 수준 규칙을 지나치기 때문에, 함수 안에 검사가 없으면 그 함수가 곧 뒷문이다. 새로 만들 때마다 세 가지를 같이 쓴다.
+
+1. **검사** — 함수 첫 줄에서 역할·소속을 본다. 거부 검사는 `coalesce` 와 함께: `if coalesce(my_role(),'') not in ('owner') then raise exception '권한 없음'; end if;`
+2. **search_path 고정** — `set search_path = public, pg_temp` 를 넣고 표 이름 앞에 `public.` 을 붙인다.
+3. **실행 권한** — `revoke all on function <이름>(…) from public, anon;` 그리고 앱이 부를 함수면 `grant execute … to authenticated;`. 서버 예약만 부르는 함수(운영 보고 발송)는 `authenticated` 에게도 주지 않는다.
+
+예외 하나: **정책 안에서 부르는 판정 함수(`my_role`·`my_company`)는 `authenticated` 실행 권한을 절대 거두지 않는다.** 거두면 그 함수를 쓰는 표의 조회가 통째로 실패한다(`lessons.md` 4번).
+
+함수를 다시 쓸 때(`create or replace`)도 이 세 줄이 그대로인지 확인한다. 다시 쓰다가 빠지는 일이 흔하다(`lessons.md` 5번).

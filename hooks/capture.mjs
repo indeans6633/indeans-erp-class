@@ -11,7 +11,7 @@
 //                           주소 없이 버튼으로만 넘어가는 두 번째·세 번째 화면을 찍을 때 쓴다.
 //                           예: --click "오늘 나가는 현장" --click "24-101"
 //   --widths "375,1280"     찍을 폭(기본 "375,1280")
-//   --out reports/shots     저장 폴더(기본 reports/shots/<오늘 날짜>)
+//   --out reports/shots     저장 폴더(기본 reports/shots/<오늘 날짜 — 이 컴퓨터의 시간대 기준>)
 //   --name list             파일 이름 앞부분(기본은 경로에서 만든다)
 //   --wait 1500             화면이 그려질 때까지 기다리는 밀리초(기본 1500)
 //   --full                  화면 전체를 위아래로 다 찍는다(기본은 보이는 만큼)
@@ -51,7 +51,8 @@ const clicks = args.reduce((acc, a, i) => (a === '--click' && args[i + 1] ? [...
 const widths = String(flag('--widths', '375,1280')).split(',').map((s) => Number(s.trim())).filter((n) => n > 0)
 const wait = Number(flag('--wait', '1500'))
 const nameArg = flag('--name')
-const today = new Date().toISOString().slice(0, 10)
+// 사진 폴더 날짜는 이 컴퓨터의 시간대로(세계 표준시면 한국 오전 9시 전에 전날 폴더가 된다 — 2026-10-09 리허설).
+const today = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10)
 const outDir = path.resolve(process.cwd(), flag('--out', path.join('reports', 'shots', today)))
 
 // 내 컴퓨터의 주소만 찍는다. 내 컴퓨터에서 돌고 있는 dev 서버(localhost)와 내 컴퓨터의 파일(file://)은 그대로 허용한다.

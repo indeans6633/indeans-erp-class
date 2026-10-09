@@ -113,7 +113,7 @@ codex doctor
 
 | 묶음 | 어디에 | 몇 개 |
 |---|---|---|
-| 스킬 | `.claude/skills/` · `.agents/skills/` | 15개 폴더(각 폴더에 `SKILL.md`) |
+| 스킬 | `.claude/skills/` · `.agents/skills/` | 16개 폴더(각 폴더에 `SKILL.md`) |
 | 감독 에이전트 | `.claude/agents/*.md` · `.codex/agents/*.toml` | 4개 (`erp-supervisor`·`erp-design-supervisor`·`erp-verifier`·`erp-auditor`) |
 | 검수 훅·도구 | `.owner/hooks/` | 7개 — `erp-check.mjs`(검수)·`open.mjs`(열기)·`capture.mjs`(화면 사진)·`report.mjs`(보고서)·`design-pick.mjs`(디자인 선택창) + 배포 전 점검·정기 점검 훅 2개(이름은 `manifest.json`) |
 | 디자인 선택창 | `.owner/design/` | `index.html`(선택창)·`app/`·`fonts/`(글꼴·라이선스)·`src/`(구조별 목업·뼈대 CSS) — 빠진 것은 아래 점검 명령이 센다 |

@@ -18,6 +18,17 @@
         "hooks": [
           {
             "type": "command",
+            "command": "node \"${CLAUDE_PROJECT_DIR}/.owner/hooks/erp-guard.mjs\" --tool claude",
+            "timeout": 10,
+            "statusMessage": "다른 프로그램까지 끄는 명령인지 확인"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
             "command": "node \"${CLAUDE_PROJECT_DIR}/.owner/hooks/erp-predeploy.mjs\" --tool claude",
             "timeout": 600,
             "statusMessage": "배포 명령이면 커밋·빌드·고정 검사 확인"

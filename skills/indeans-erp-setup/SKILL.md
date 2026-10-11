@@ -27,9 +27,11 @@ description: ERP를 만들 준비(도구·번들 설치·서드파티 계정 가
 | `.owner/hooks/` · `.owner/design/` | 검수 훅·도구와 디자인 선택창이 있는지 |
 | `company/profile.md` · `company/design.md` | 인터뷰·디자인 결과 문서가 **실제로** 있는지 |
 | `package.json` · `src/` | 초안 앱이 이미 있는지 |
+| **가져온 앱 감지** — `package.json` · `src/`(`app/`·`pages/`) · `company.name` · `imported_app.detected` | 다른 도구로 만들어 온 앱인지. 기준은 `indeans-erp-rebuild` 의 「기존 앱 감지 기준」(`src/styles/` 만 있는 설치 골격은 앱이 아니다) |
 
 판정과 분기:
 
+- **가져온 앱** — 감지 기준이 맞는다(또는 `imported_app.detected` true) → 점검(절차 1~11)만 마치고 마지막 안내를 교재 B1 문장으로 바꿔 넘긴다(절차 11). **앱은 건드리지 않는다** — `.gitignore` 에 `.env`·`.env.local`·`.owner/tmp/` 줄이 없으면 알리고 넣는 것까지만. **이미 기록에 들어 있는 `.env` 는 추적 해제(`git rm --cached`)하지 않는다** — 리빌딩 진단이 '커밋된 .env' 를 치명으로 올리고 대표가 제안서에서 고른 뒤 처리한다(여기서 빼 두면 진단이 '현재 추적 중'을 못 본다). `.env` 계열 파일은 열지 않는다 — 키 이름만 보려는 `sed`·`cat` 도 포함(결과 표에는 `git ls-files` 로 "기록에 들어 있음/없음"만 적는다). 결과 표의 첫 행은 **'가져온 앱 감지 — 감지됨'** 이다(문장으로만 알리지 않는다).
 - **설치 전** — `.owner/install-state.json`이 없다 → 절차 1~2를 하고 **절차 6(번들 설치)**부터 챙긴다. 설치가 안 된 폴더에서는 다른 스킬이 뜨지 않는다.
 - **1회차 처음** — 설치는 됐고 점검 기록·`.owner/accounts.md`가 없다 → 절차 1~11 전부.
 - **1회차 진행 중** — 미해결 문제에 미설치·미가입 항목이 남았거나, `interview.round`가 0이거나 `design.code`가 비어 있다 → 남은 항목만 확인하고 1회차 순서에서 빠진 자리로 보낸다(인터뷰 → `indeans-erp-interview`, 디자인 → `indeans-erp-design`).
@@ -113,7 +115,7 @@ codex doctor
 
 | 묶음 | 어디에 | 몇 개 |
 |---|---|---|
-| 스킬 | `.claude/skills/` · `.agents/skills/` | 16개 폴더(각 폴더에 `SKILL.md`) |
+| 스킬 | `.claude/skills/` · `.agents/skills/` | 17개 폴더(각 폴더에 `SKILL.md`) |
 | 감독 에이전트 | `.claude/agents/*.md` · `.codex/agents/*.toml` | 4개 (`erp-supervisor`·`erp-design-supervisor`·`erp-verifier`·`erp-auditor`) |
 | 검수 훅·도구 | `.owner/hooks/` | 7개 — `erp-check.mjs`(검수)·`open.mjs`(열기)·`capture.mjs`(화면 사진)·`report.mjs`(보고서)·`design-pick.mjs`(디자인 선택창) + 배포 전 점검·정기 점검 훅 2개(이름은 `manifest.json`) |
 | 디자인 선택창 | `.owner/design/` | `index.html`(선택창)·`app/`·`fonts/`(글꼴·라이선스)·`src/`(구조별 목업·뼈대 CSS) — 빠진 것은 아래 점검 명령이 센다 |
@@ -210,6 +212,14 @@ git commit -m "1회차 시작 점검·계정 기록"
 ```
 
 마지막으로 대표에게 3줄로 보고한다: 된 것 / 안 된 것(언제까지) / 다음 행동. 끝에 한 줄: "다음 작업(1차 인터뷰)은 새 대화에서 시작합니다. 교재 P4 문장(`indeans-erp-interview 스킬을 읽고 1차 인터뷰를 시작해 주세요.`로 시작하는 블록)을 그대로 넣어 주세요." 스킬 이름을 뺀 줄임말("1차 인터뷰 시작해 줘")로 안내하지 않는다 — 이름을 불러야 그 절차대로 움직인다.
+
+가져온 앱이면 끝 한 줄이 다르다: "다음 작업(리빌딩)은 새 대화에서 시작합니다. 교재 1회차 앞선 트랙 B1 문장을 그대로 넣어 주세요." 하고 그 세 줄을 **글자 그대로** 보여 준다(줄여 쓰지 않는다 — 되돌릴 지점·백업·진단·제안 지시가 다 들어 있다). `.owner/state.md` 의 "다음 행동"도 `새 대화에서 indeans-erp-rebuild — 되돌릴 지점·백업·진단·제안` 으로 적는다.
+
+```
+indeans-erp-rebuild 스킬을 읽고 시작해 주세요.
+이 폴더의 앱은 제가 다른 도구로 만들어 온 것입니다. 먼저 되돌릴 지점과 백업을 만들고,
+앱을 진단해서 개선 방향을 제안해 주세요. 제가 고르기 전에는 아무것도 고치지 마세요.
+```
 
 ### 12. 사전 안내를 못 한 대표 — 당일 60분 따라잡기
 

@@ -52,10 +52,10 @@
 | ⑨ | 1차 끝남 · `design.code` 있음 | 2차 차례 | SKILL 절차 3 |
 | ⑩ | 1차 진행 중 · 업종 분류 없음 | 분류 불명 재개 | 1-2·1-3부터. 팩·구조 추천은 그 뒤에 정한다 |
 | ⑪ | 1차 진행 중 · 업종 분류 있음 | 1차 이어 하기 | 빈 칸만. 끝나면 디자인으로 |
-| ⑫ | `company/profile.md` 없음 · `app.draft_done` true | 앱 먼저 만들어 온 분 | 1차부터. 화면에 이미 있는 것은 "이렇게 부르시는 것 맞죠?"로 확인만 |
+| ⑫ | `company/profile.md` 없음 · `app.draft_done` true 또는 `imported_app.detected` true | 앱 먼저 만들어 온 분 | 1차부터. 화면에 이미 있는 것은 "이렇게 부르시는 것 맞죠?"로 확인만. 가져온 앱이면 축약 모드(`imported-app.md`) — 끝나면 디자인이 아니라 `indeans-erp-rebuild` 로 돌아간다 |
 | ⑬ | 아무 문서도 없음 | 1차 처음 | SKILL 절차 2 |
 
-- **앱이 있는지는 `.owner/progress.json`의 `app.draft_done`으로만 본다.** `src/`·`package.json`만 있는 것(설치 골격)은 앱이 아니다.
+- **앱이 있는지는 `.owner/progress.json`의 `app.draft_done`(이 번들로 만든 앱)과 `imported_app.detected`(가져온 앱 — 블록이 없으면 false)로만 본다.** `src/`·`package.json`만 있는 것(설치 골격)은 앱이 아니다.
 - 어느 판정이든 `open_items` 중 `ask_at`이 이번 차수 첫머리인 것과 `state: 약속`인 것을 **첫 질문보다 먼저** 묻는다.
 
 ## 5. 선행 문서 — 차수마다 있어야 하는 것

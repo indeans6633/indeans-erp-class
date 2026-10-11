@@ -33,6 +33,7 @@ description: 2회차에 구조안(company/structure.md)과 1회차에 고른 디
 판정과 분기:
 
 - **인터뷰 덜 됨** — `company/structure.md`가 없거나 `interview.round`가 3 미만이거나 `interview.open_items`에 `blocks_draft: true` 항목이 남아 있다 → 만들지 않는다. "먼저 `indeans-erp-interview`로 2·3차 인터뷰를 마쳐야 합니다"라고 알리고 멈춘다.
+- **가져온 앱** — 위 인터뷰 조건을 통과했고(가져온 앱도 2·3차는 건너뛰지 않는다) `imported_app.stage` 가 있다(다른 도구로 만든 앱을 `indeans-erp-rebuild` 로 바꿔 둔 것) → **초안 만들기만** 건너뛴다. `stage` 가 `"reported"`(리빌딩 1단계 끝)면 "리빌딩 2단계(저장·배포)로 갑니다"라고 알리고 `indeans-erp-data`(가져온 앱 분기)로 보낸다. `"data"`(저장·배포까지 끝)면 `indeans-erp-rebuild` 의 「앞선 수강생 분기」로 안내한다. `"design"`·`"screens"`·`"checked"` 면 `indeans-erp-rebuild` 로 돌아가 1단계를 마친다.
 - **디자인 없음** — `design.code`가 비었거나 `src/styles/tokens.css`가 없다 → `indeans-erp-design`을 먼저 하라고 알린다(부르면 선택창이 자동으로 열린다, 5~10분). 그것 없이 만들면 화면을 두 번 고치게 된다.
 - **문서·디자인 있음, 앱 없음** → 절차 1~16(전체 생성).
 - **앱 있음, 화면 3개 미완** → 빠진 화면만 만든다(그 화면의 설계 선언부터).

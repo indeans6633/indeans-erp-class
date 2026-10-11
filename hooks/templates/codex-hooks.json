@@ -17,6 +17,16 @@
         "hooks": [
           {
             "type": "command",
+            "command": "node \"{{PROJECT_DIR}}/.owner/hooks/erp-guard.mjs\" --tool codex",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
             "command": "node \"{{PROJECT_DIR}}/.owner/hooks/erp-predeploy.mjs\" --tool codex",
             "timeout": 600
           }

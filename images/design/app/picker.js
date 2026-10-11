@@ -468,7 +468,7 @@
     saved = true;
     if (server.timer) clearInterval(server.timer);
     var box = resultBox();
-    box.appendChild(el('h2', null, '저장됐습니다 — 이제 AI 에게 \'골랐어요\'라고 말하세요'));
+    box.appendChild(el('h2', null, '저장됐습니다 — AI 가 이어서 진행합니다. 대화가 멈춰 있으면 \'골랐어요\'라고 말하세요'));
     box.appendChild(el('p', null, (d.label || R.label(state)) + ' (' + (d.code || code()) + ')'));
     if (d.files && d.files.length) {
       box.appendChild(el('p', null, '만든 파일:'));
@@ -481,7 +481,7 @@
     go.disabled = true;
     go.textContent = '저장됨';
     $('pk-block').hidden = true;
-    $('pk-mode').textContent = '저장됐습니다. AI 에게 \'골랐어요\'라고 말하세요.';
+    $('pk-mode').textContent = '저장됐습니다. AI 가 이어서 진행합니다(멈춰 있으면 \'골랐어요\').';
     focusResult(box);
   }
 

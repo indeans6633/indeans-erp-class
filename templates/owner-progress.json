@@ -30,6 +30,15 @@
     "backup_documented": false,
     "roles": []
   },
+  "imported_app": {
+    "detected": false,
+    "backup_commit": null,
+    "diagnosed_at": null,
+    "interview_done": false,
+    "plan_chosen": [],
+    "screens_done": [],
+    "stage": null
+  },
   "channel": {
     "discord": false,
     "telegram": false

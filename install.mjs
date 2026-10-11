@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // 인디언즈 ERP 클래스 설치기 — 네트워크 호출 없음. 이 저장소에 든 것을 내 ERP 프로젝트에 한 번에 넣는다.
-// 스킬 16종 · 에이전트 4종(감독 2·검증 1·감사 1) · 훅 3종(검수·배포 전 확인·주간 점검 알림)과 도우미 스크립트 4종
-// · 디자인 선택창 · 회차 자료 · 진행 상태 문서 · 프로젝트 지침(CLAUDE.md·AGENTS.md — 없을 때만 세 줄).
+// 스킬 17종 · 에이전트 4종(감독 2·검증 1·감사 1) · 훅 4종(검수·명령 보호·배포 전 확인·주간 점검 알림)과 도우미 스크립트 4종
+// · 디자인 선택창 · 회차 자료 · 진행 상태 문서 · 프로젝트 지침(CLAUDE.md·AGENTS.md — 없을 때만 네 줄).
 // 회차를 고르는 인자는 없다(통합 번들이다).
 //
 // 사용: node install.mjs --project "C:\path\to\my-erp" [--target both|claude|codex] [--dry-run]
@@ -55,6 +55,63 @@ if (['manifest.json', 'install.mjs'].every((f) => fs.existsSync(path.join(root, 
 }
 
 const manifest = JSON.parse(fs.readFileSync(path.join(HERE, 'manifest.json'), 'utf8'))
+
+// 가져온 앱 감지 — 다른 도구로 만들어 온 앱이 이 폴더에 이미 있는지 설치 전에 본다(아무것도 쓰지 않는다).
+// 기준의 단일 원본은 skills/indeans-erp-rebuild/SKILL.md 「기존 앱 감지 기준」이다. 바꾸면 그쪽과 같이 고친다.
+//   ① package.json 의 dependencies 가 하나 이상이거나, dependencies·devDependencies 에 UI 틀(react·vue·svelte·next·nuxt·
+//      @angular/core·solid-js·preact·lit·astro)이 있다
+//   ② src/·app/·pages/ 아래(src/styles/ 제외, 7단계 깊이까지) 화면 파일 — .jsx·.tsx·.vue·.svelte·.astro 가 1개 이상,
+//      또는 .js·.ts 가 있고 맨 위·src/·app/ 에 index.html·app.html 이 있다(.js·.ts 만으로는 앱으로 보지 않는다)
+//   ③ .owner/progress.json 의 company.name 이 비어 있다(파일이 없어도). 파일이 있는데 못 읽으면 **감지하지 않고** 알린다.
+//   한계: 여러 앱이 든 저장소(apps/*)·7단계보다 깊은 화면은 보지 않는다(지원 범위 밖 — README·SKILL 에 같은 줄).
+const UI_EXT = new Set(['.jsx', '.tsx', '.vue', '.svelte', '.astro'])
+const JS_EXT = new Set(['.js', '.ts'])
+const UI_DEPS = ['react', 'vue', 'svelte', 'next', 'nuxt', '@angular/core', 'solid-js', 'preact', 'lit', 'astro']
+function findScreenFiles(dir, found, depth = 0) {
+  if (depth > 6) return
+  let entries = []
+  try { entries = fs.readdirSync(dir, { withFileTypes: true }) } catch { return }
+  for (const e of entries) {
+    if (e.isSymbolicLink()) continue
+    const p = path.join(dir, e.name)
+    if (e.isDirectory()) {
+      if (e.name === 'node_modules' || p === path.join(root, 'src', 'styles')) continue
+      findScreenFiles(p, found, depth + 1)
+      if (found.ui) return
+      continue
+    }
+    const ext = path.extname(e.name).toLowerCase()
+    if (UI_EXT.has(ext)) { found.ui = true; return }
+    if (JS_EXT.has(ext)) found.js = true
+  }
+}
+// 진행 문서는 여기서 한 번만 읽는다 — 기존 앱 감지와 마지막 「다음:」 안내(진행 중인 프로젝트 재설치)가 같이 쓴다.
+// 파일이 있는데 못 읽으면(깨졌거나 인코딩이 다름) 감지하지 않고 알린다.
+const progressPath = path.join(root, '.owner', 'progress.json')
+const progressExists = fs.existsSync(progressPath)
+let existingProgress = null
+let progressUnreadable = false
+if (progressExists) {
+  try { existingProgress = JSON.parse(fs.readFileSync(progressPath, 'utf8').replace(new RegExp('^' + String.fromCharCode(0xFEFF)), '')) } catch { existingProgress = null }
+  if (!existingProgress || typeof existingProgress !== 'object' || Array.isArray(existingProgress)) { existingProgress = null; progressUnreadable = true }
+}
+function detectImportedApp() {
+  let pkg = null
+  try { pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8').replace(new RegExp('^' + String.fromCharCode(0xFEFF)), '')) } catch { return false }
+  if (!pkg || typeof pkg !== 'object' || Array.isArray(pkg)) return false
+  const obj = (v) => (v && typeof v === 'object' && !Array.isArray(v) ? v : {})
+  const run = obj(pkg.dependencies); const dev = obj(pkg.devDependencies)
+  if (!Object.keys(run).length && !UI_DEPS.some((d) => d in run || d in dev)) return false
+  const found = { ui: false, js: false }
+  for (const d of ['src', 'app', 'pages']) { findScreenFiles(path.join(root, d), found); if (found.ui) break }
+  const htmlEntry = ['', 'src', 'app'].some((d) => ['index.html', 'app.html'].some((f) => fs.existsSync(path.join(root, d, f))))
+  if (!found.ui && !(found.js && htmlEntry)) return false
+  if (progressUnreadable) return false
+  const prog = existingProgress
+  if (prog && prog.company && typeof prog.company.name === 'string' && prog.company.name.trim()) return false
+  return true
+}
+const importedApp = detectImportedApp()
 const wantClaude = target === 'both' || target === 'claude'
 const wantCodex = target === 'both' || target === 'codex'
 
@@ -197,19 +254,33 @@ const tplDir = path.join(HERE, 'templates')
 const stateTpl = path.join(tplDir, 'owner-state.md')
 const progTpl = path.join(tplDir, 'owner-progress.json')
 if (fs.existsSync(stateTpl)) add(path.join(root, '.owner', 'state.md'), fs.readFileSync(stateTpl), '상태 문서', true)
-if (fs.existsSync(progTpl)) add(path.join(root, '.owner', 'progress.json'), fs.readFileSync(progTpl), '상태 문서', true)
+if (fs.existsSync(progTpl)) {
+  // 가져온 앱이면 새로 만드는 진행 문서에 imported_app.detected 를 true 로 적는다(이미 있는 진행 문서는 그대로 둔다).
+  let progData = fs.readFileSync(progTpl)
+  if (importedApp) {
+    // 템플릿의 줄 모양을 그대로 두려고 그 한 칸만 글자로 바꾼다. 바꾼 뒤 JSON 으로 읽혀야만 쓴다.
+    const text = progData.toString('utf8')
+    const changed = text.replace(/("imported_app"\s*:\s*\{\s*"detected"\s*:\s*)false/, '$1true')
+    try {
+      if (changed !== text && JSON.parse(changed).imported_app.detected === true) progData = Buffer.from(changed, 'utf8')
+    } catch { /* 못 바꾸면 그대로 넣는다 — 스킬이 감지 기준으로 다시 본다 */ }
+  }
+  add(path.join(root, '.owner', 'progress.json'), progData, '상태 문서', true)
+}
 
 // ⑦ 보고서 폴더
 add(path.join(root, 'reports', '.gitkeep'), '', '보고서 폴더', true)
 
-// ⑧ 프로젝트 지침(CLAUDE.md·AGENTS.md) — 없을 때만 세 줄로 만든다. 있으면 절대 건드리지 않고(수강생 파일이다) 빠진 줄만 알려 준다.
+// ⑧ 프로젝트 지침(CLAUDE.md·AGENTS.md) — 없을 때만 네 줄로 만든다. 있으면 절대 건드리지 않고(수강생 파일이다) 빠진 줄만 알려 준다.
 //    한국어 줄은 2026-10-09 리허설에서 백그라운드 작업 알림이 여러 번 끼어든 뒤 AI 가 한국어 대표에게 영어로 답한 일 때문이다.
+//    PID 줄은 2026-10-11 리허설 D 에서 미리보기 서버를 끄려던 `taskkill /IM node.exe` 가 이 컴퓨터의 node 전부를 끈 일 때문이다.
 const PROJECT_RULES = [
   '- 항상 한국어로 답한다(백그라운드 알림이 끼어들어도).',
   '- 스킬은 이름으로 부르면 그 절차대로 따른다.',
   '- 작업이 끝나면 .owner/state.md 를 갱신한다.',
+  '- 서버·프로세스는 자기가 띄운 것만 번호(PID)로 끈다. 이름으로 전부 끄는 명령(taskkill /IM · pkill · killall · Stop-Process -Name)은 쓰지 않는다.',
 ]
-const RULE_KEYS = [/한국어/, /스킬[^\n]*이름/, /\.owner\/state\.md/]
+const RULE_KEYS = [/한국어/, /스킬[^\n]*이름/, /\.owner\/state\.md/, /PID/]
 const guideFiles = [wantClaude ? 'CLAUDE.md' : null, wantCodex ? 'AGENTS.md' : null].filter(Boolean)
 for (const g of guideFiles) add(path.join(root, g), PROJECT_RULES.join('\n') + '\n', '프로젝트 지침', true)
 
@@ -418,7 +489,13 @@ function registerFromTemplate(file, label, tplName) {
     else { if (!json.hooks) json.hooks = {}; holder = json.hooks }
     if (holder[w.event] === undefined) holder[w.event] = []
     if (!Array.isArray(holder[w.event])) { parts.push(`${w.script} 건너뜀(${w.event} 이 목록 형태가 아님)`); continue }
-    holder[w.event].push({ ...(w.matcher !== undefined ? { matcher: w.matcher } : {}), hooks: [{ ...w.entry }] })
+    // 조각 파일의 순서를 지킨다 — 조각에서 이 항목보다 뒤에 오는 번들 훅(예: 명령 보호 → 배포 전 확인)이 이미 등록돼 있으면 그 앞에 넣는다.
+    const newGroup = { ...(w.matcher !== undefined ? { matcher: w.matcher } : {}), hooks: [{ ...w.entry }] }
+    const later = new Set(wanted.slice(wanted.indexOf(w) + 1).filter((x) => x.event === w.event).map((x) => x.script))
+    const at = holder[w.event].findIndex((grp) => grp && typeof grp === 'object'
+      && (Array.isArray(grp.hooks) ? grp.hooks : Array.isArray(grp) ? grp : []).some((h) => h && typeof h.command === 'string' && later.has(scriptOf(h.command))))
+    if (at >= 0) holder[w.event].splice(at, 0, newGroup)
+    else holder[w.event].push(newGroup)
     changed = true
     parts.push(`${w.script} ${existed ? '등록' : '새로 만들고 등록'}`)
   }
@@ -511,8 +588,8 @@ if (imgCount) console.log(`  디자인 선택창    ${imgCount}개 → .owner/de
 if (foundCourse.length) console.log(`  회차 자료       ${foundCourse.length}개 → course/`)
 console.log(`  상태 문서       .owner/state.md · .owner/progress.json (없을 때만 새로 만듭니다)`)
 console.log(`  보고서 폴더     reports/`)
-if (guideFiles.length) console.log(`  프로젝트 지침   ${guideFiles.join(' · ')} (없을 때만 세 줄로 만듭니다 — 한국어로 답하기 · 스킬 이름대로 · 끝나면 state.md)`)
-// 이미 있던 지침 파일에 세 줄 중 빠진 것이 있으면 알려만 준다(고치지 않는다)
+if (guideFiles.length) console.log(`  프로젝트 지침   ${guideFiles.join(' · ')} (없을 때만 네 줄로 만듭니다 — 한국어로 답하기 · 스킬 이름대로 · 끝나면 state.md · 자기가 띄운 서버만 PID 로 끄기)`)
+// 이미 있던 지침 파일에 네 줄 중 빠진 것이 있으면 알려만 준다(고치지 않는다)
 for (const g of guideFiles) {
   let t = null
   try { t = fs.readFileSync(path.join(root, g), 'utf8') } catch { t = null }
@@ -618,6 +695,25 @@ if (foundHooks.includes('design-pick.mjs')) {
   console.log('디자인 선택창은 indeans-erp-design 스킬을 부르면 자동으로 열립니다(.owner/hooks/design-pick.mjs — 이 컴퓨터 안에서만 뜨는 화면).')
 }
 console.log('')
-console.log(`다음: 새 대화를 열고 "${manifest.firstSkill || 'indeans-erp-setup'} 스킬을 읽고 시작해 줘" 라고 요청하세요(스킬 이름을 직접 불러야 그 절차대로 움직입니다).`)
+if (progressUnreadable) {
+  console.log('진행 문서를 읽지 못했습니다(.owner/progress.json — 깨졌거나 인코딩이 다름). 설치기는 그 파일을 그대로 두고, 기존 앱 감지도 하지 않았습니다.')
+  console.log('  새 대화에서 indeans-erp-setup 스킬로 점검하세요(진행 문서부터 바로잡습니다). 다른 도구로 만든 앱이면 그다음 indeans-erp-rebuild 가 다시 판정합니다.')
+}
+if (importedApp) {
+  console.log('다음: 이 폴더에 이미 앱이 있습니다 → 새 대화에서 "indeans-erp-rebuild 스킬을 읽고 시작해 줘" 라고 요청하세요.')
+  console.log('  되돌릴 지점과 백업을 먼저 만들고, 앱을 진단해 개선 방향을 제안합니다. 대표님이 고르기 전에는 앱을 고치지 않습니다.')
+  console.log('  (교재 1회차 앞선 트랙 B1 의 문장을 그대로 넣어도 됩니다. 수업 순서대로 indeans-erp-setup 점검·계정 가입을 먼저 해도 됩니다 — 그 스킬이 끝에 이 스킬로 넘겨 줍니다.)')
+} else if (!progressUnreadable && existingProgress && existingProgress.company
+  && typeof existingProgress.company.name === 'string' && existingProgress.company.name.trim()) {
+  // 진행 중인 프로젝트(회사 이름이 적힌 진행 문서가 이미 있음)에 다시 설치한 경우 — 처음 점검으로 돌려보내지 않고 다음 행동을 보여 준다.
+  const nextAction = typeof existingProgress.next_action === 'string' ? existingProgress.next_action.trim() : ''
+  if (nextAction) {
+    console.log(`다음: 이 프로젝트는 진행 중입니다 — 다음 행동: "${nextAction}". 새 대화에서 그 스킬 이름을 불러 이어가세요. 처음부터 점검하려면 "indeans-erp-setup 스킬을 읽고 시작해 줘".`)
+  } else {
+    console.log('다음: 이 프로젝트는 진행 중입니다 — 다음 행동은 .owner/state.md 의 "다음 행동" 을 보세요. 새 대화에서 그 스킬 이름을 불러 이어가세요. 처음부터 점검하려면 "indeans-erp-setup 스킬을 읽고 시작해 줘".')
+  }
+} else {
+  console.log(`다음: 새 대화를 열고 "${manifest.firstSkill || 'indeans-erp-setup'} 스킬을 읽고 시작해 줘" 라고 요청하세요(스킬 이름을 직접 불러야 그 절차대로 움직입니다).`)
+}
 if (dry) console.log('')
 if (dry) console.log('[미리보기] 실제로는 아무것도 바꾸지 않았습니다. --dry-run 을 빼고 다시 실행하면 설치됩니다.')

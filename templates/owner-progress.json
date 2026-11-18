@@ -1,5 +1,5 @@
 {
-  "bundle_version": "2.0.0",
+  "bundle_version": "3.3.0",
   "updated_at": null,
   "updated_by": null,
   "company": {
@@ -48,11 +48,11 @@
     "first_received": false
   },
   "sessions": {
-    "1": { "outcome": "설치·계정 가입 + 1차 인터뷰(회사·업종)로 쓴 회사 문서 + 고른 디자인", "done": false },
-    "2": { "outcome": "2·3차 인터뷰로 정한 첫 흐름이 초안 → 실제 저장 → 인터넷 주소로 열리는 앱 + 작업 보고서", "done": false },
-    "3": { "outcome": "(가안 — 2회차 뒤 확정) 권한 단계 · 운영 보고 단계", "done": false },
-    "4": { "outcome": "(가안 — 2회차 뒤 확정) 돈 흐름 단계 또는 두 번째 흐름 단계 · 실사용 준비 단계", "done": false },
-    "final": { "outcome": "2주 사용 결과 + 다음 개선 순서", "done": false }
+    "1": { "outcome": "1일 차 — 설치 점검 + 인터뷰 1·2·3차 + 테마 고르기 + 초안(내 컴퓨터, 가짜 데이터) + 작업 보고서", "done": false },
+    "2": { "outcome": "저장·배포 단계 — 초안이 실제 저장 → 인터넷 주소로 열리는 앱 + 작업 보고서", "done": false },
+    "3": { "outcome": "(수업 뒤 · 저장·배포 뒤 확정) 권한 단계 · 운영 보고 단계", "done": false },
+    "4": { "outcome": "(수업 뒤 · 저장·배포 뒤 확정) 돈 흐름 단계 또는 두 번째 흐름 단계 · 실사용 준비 단계", "done": false },
+    "final": { "outcome": "2주 써 본 결과 + 다음 개선 순서", "done": false }
   },
   "open_problems": [],
   "next_action": "indeans-erp-setup 스킬로 시작 점검"

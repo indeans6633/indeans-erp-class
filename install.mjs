@@ -244,7 +244,7 @@ const courseDirs = [...manifest.sessions.map((s) => `session-${String(s.session)
 const foundCourse = []
 for (const d of courseDirs) {
   const src = path.join(HERE, 'course', d)
-  if (!fs.existsSync(src)) { notes.push(`회차 자료가 아직 없어 건너뜁니다: course/${d}`); continue }
+  if (!fs.existsSync(src)) { notes.push(`수업 자료가 아직 없어 건너뜁니다: course/${d}`); continue }
   foundCourse.push(d)
   for (const f of walk(src)) add(path.join(root, 'course', d, path.relative(src, f)), fs.readFileSync(f), '회차 자료')
 }
@@ -585,7 +585,7 @@ const helperScripts = foundHooks.filter((f) => !registeredScripts.has(f))
 if (autoHooks.length) console.log(`  훅(자동 실행)    ${autoHooks.length}개 → .owner/hooks/ (${autoHooks.map((f) => f.replace(/\.mjs$/, '')).join('·')})`)
 if (helperScripts.length) console.log(`  도우미 스크립트  ${helperScripts.length}개 → .owner/hooks/ (${helperScripts.map((f) => f.replace(/\.mjs$/, '')).join('·')})`)
 if (imgCount) console.log(`  디자인 선택창    ${imgCount}개 → .owner/design/`)
-if (foundCourse.length) console.log(`  회차 자료       ${foundCourse.length}개 → course/`)
+if (foundCourse.length) console.log(`  수업 자료       ${foundCourse.length}개 → course/`)
 console.log(`  상태 문서       .owner/state.md · .owner/progress.json (없을 때만 새로 만듭니다)`)
 console.log(`  보고서 폴더     reports/`)
 if (guideFiles.length) console.log(`  프로젝트 지침   ${guideFiles.join(' · ')} (없을 때만 네 줄로 만듭니다 — 한국어로 답하기 · 스킬 이름대로 · 끝나면 state.md · 자기가 띄운 서버만 PID 로 끄기)`)
@@ -692,7 +692,7 @@ console.log('설치기는 네트워크를 쓰지 않습니다. 설치 기록은 
 console.log('화면 캡처를 쓰려면 이 프로젝트에 playwright 가 필요합니다(설치기가 대신 설치하지 않습니다).')
 console.log('  npm i -D playwright  →  npx playwright install chromium')
 if (foundHooks.includes('design-pick.mjs')) {
-  console.log('디자인 선택창은 indeans-erp-design 스킬을 부르면 자동으로 열립니다(.owner/hooks/design-pick.mjs — 이 컴퓨터 안에서만 뜨는 화면).')
+  console.log('디자인 선택창은 인터뷰 3차가 끝난 뒤 새 대화에서 「디자인 테마 골라 줘.」라고 하면 열립니다(.owner/hooks/design-pick.mjs — 이 컴퓨터 안에서만 뜨는 화면).')
 }
 console.log('')
 if (progressUnreadable) {
@@ -702,18 +702,19 @@ if (progressUnreadable) {
 if (importedApp) {
   console.log('다음: 이 폴더에 이미 앱이 있습니다 → 새 대화에서 "indeans-erp-rebuild 스킬을 읽고 시작해 줘" 라고 요청하세요.')
   console.log('  되돌릴 지점과 백업을 먼저 만들고, 앱을 진단해 개선 방향을 제안합니다. 대표님이 고르기 전에는 앱을 고치지 않습니다.')
-  console.log('  (교재 1회차 앞선 트랙 B1 의 문장을 그대로 넣어도 됩니다. 수업 순서대로 indeans-erp-setup 점검·계정 가입을 먼저 해도 됩니다 — 그 스킬이 끝에 이 스킬로 넘겨 줍니다.)')
+  console.log('  (수업 순서대로 새 대화에서 「설치 점검해 줘.」로 점검을 먼저 해도 됩니다 — 그 점검(indeans-erp-setup)이 끝에 이 스킬로 넘겨 줍니다.)')
 } else if (!progressUnreadable && existingProgress && existingProgress.company
   && typeof existingProgress.company.name === 'string' && existingProgress.company.name.trim()) {
   // 진행 중인 프로젝트(회사 이름이 적힌 진행 문서가 이미 있음)에 다시 설치한 경우 — 처음 점검으로 돌려보내지 않고 다음 행동을 보여 준다.
   const nextAction = typeof existingProgress.next_action === 'string' ? existingProgress.next_action.trim() : ''
   if (nextAction) {
-    console.log(`다음: 이 프로젝트는 진행 중입니다 — 다음 행동: "${nextAction}". 새 대화에서 그 스킬 이름을 불러 이어가세요. 처음부터 점검하려면 "indeans-erp-setup 스킬을 읽고 시작해 줘".`)
+    console.log(`다음: 이 프로젝트는 진행 중입니다 — 다음 행동: "${nextAction}". 새 대화에서 그 스킬 이름을 불러 이어가세요. 처음부터 점검하려면 새 대화에서 「설치 점검해 줘.」.`)
   } else {
-    console.log('다음: 이 프로젝트는 진행 중입니다 — 다음 행동은 .owner/state.md 의 "다음 행동" 을 보세요. 새 대화에서 그 스킬 이름을 불러 이어가세요. 처음부터 점검하려면 "indeans-erp-setup 스킬을 읽고 시작해 줘".')
+    console.log('다음: 이 프로젝트는 진행 중입니다 — 다음 행동은 .owner/state.md 의 "다음 행동" 을 보세요. 새 대화에서 그 스킬 이름을 불러 이어가세요. 처음부터 점검하려면 새 대화에서 「설치 점검해 줘.」.')
   }
 } else {
-  console.log(`다음: 새 대화를 열고 "${manifest.firstSkill || 'indeans-erp-setup'} 스킬을 읽고 시작해 줘" 라고 요청하세요(스킬 이름을 직접 불러야 그 절차대로 움직입니다).`)
+  console.log('다음: 앱을 껐다 켠 뒤 새 대화를 열고 「설치 점검해 줘.」라고 말씀하세요. 점검이 끝나면 새 대화에서 「1차 인터뷰 시작해 줘.」로 이어집니다.')
+  console.log(`  (짧은 말이 안 통하면 — 프로젝트 CLAUDE.md 에 짧은 말 사전이 없을 때 — "${manifest.firstSkill || 'indeans-erp-setup'} 스킬을 읽고 시작해 줘" 라고 하셔도 됩니다.)`)
 }
 if (dry) console.log('')
 if (dry) console.log('[미리보기] 실제로는 아무것도 바꾸지 않았습니다. --dry-run 을 빼고 다시 실행하면 설치됩니다.')

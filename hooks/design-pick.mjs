@@ -3,23 +3,30 @@
 // 대표가 '이걸로 하기'를 누르면 고른 조합으로 파일을 만든 뒤 끝난다.
 // 바깥 인터넷 연결 없음 · 프로젝트 폴더 밖에 쓰지 않음 · Windows(PowerShell)·macOS 양쪽.
 //
+// 2026-11-17 개정(리허설 반영): 2단계 선택창(테마 4 → 세부 설정)과 새 조합 코드
+//   theme-<테마>-<RRGGBB>-<밝기>-<메뉴>-<본문> 을 읽고 만든다. 선택창 '이걸로 하기'가 이 서버에 저장(POST /choose)한다.
+//
 // 사용(프로젝트 폴더에서):
-//   node .owner/hooks/design-pick.mjs                                  선택창 열기 → 고를 때까지 기다린다
-//   node .owner/hooks/design-pick.mjs --recommend board-soft-teal      선택창에 '추천' 표시(구조[-스타일[-색[-밝기]]])
-//   node .owner/hooks/design-pick.mjs --code board-indeans-custom-2a6f9e-auto   서버 없이 그 조합으로 바로 파일을 만든다
-//   node .owner/hooks/design-pick.mjs --check                          파일·글꼴·빈 포트·대비만 점검(브라우저를 열지 않는다)
+//   node .owner/hooks/design-pick.mjs --branch B1                       인터뷰 업종 가지로 추천 테마를 먼저 골라 둔 채 연다(?branch=B1)
+//   node .owner/hooks/design-pick.mjs                                   추천 없이 연다(인터뷰 전 · 업종 미정)
+//   node .owner/hooks/design-pick.mjs --recommend theme-large           테마로 추천(색·밝기·메뉴·본문까지 줄 수 있음: theme-large-CA8A04-light-bottom-cards)
+//   node .owner/hooks/design-pick.mjs --code theme-large-CA8A04-light-bottom-cards   서버 없이 그 조합으로 바로 파일을 만든다
+//   node .owner/hooks/design-pick.mjs --check                           파일·글꼴·빈 포트·대비만 점검(브라우저를 열지 않는다)
 //   그 밖: --no-open(브라우저 안 엶) · --port <번호>(기본: 빈 포트 자동) · --minutes <분>(무응답 제한, 기본 30)
 //          --project <폴더>(기본: 이 파일이 든 .owner/hooks 의 프로젝트, 아니면 지금 폴더)
 //
-// 조합 코드: <구조>-<스타일>-<색 | custom-RRGGBB>-<밝기>[-<모서리>][-<밀도>]
-//   예) board-soft-teal-auto · board-indeans-custom-2a6f9e-auto · list-calm-navy-light-round-compact
-//   밝기 auto(기기 설정 따름)·light·dark / 모서리 sharp·round(기본이면 생략) / 밀도 compact·roomy(기본이면 생략)
+// 조합 코드(새): theme-<테마>-<RRGGBB>-<밝기>-<메뉴>-<본문>
+//   테마 shop 따뜻한 매장 · large 큰 글씨 · list 촘촘한 목록 · brand 우리 회사 색 / 밝기 light·dark(auto 도 됨)
+//   메뉴 side 왼쪽 · top 위쪽 · bottom 아래 탭 / 본문 cards 카드 · table 목록 · board 보드
+//   예) theme-large-CA8A04-light-bottom-cards · theme-list-0F766E-light-side-table
+//   대표가 「디자인은 … 로 할게요.」 문장을 통째로 붙여도 코드만 골라 읽는다.
+// 옛 코드 <구조>-<스타일>-<색 | custom-RRGGBB>-<밝기>[-<모서리>][-<밀도>] 도 그대로 읽는다(이미 고른 수강생용).
 //
 // 만드는 파일(프로젝트 폴더 기준):
-//   .owner/design/choice.json   { structure, family, palette, seed, scheme, radius, density, code, chosen_at }
+//   .owner/design/choice.json   { theme, nav, body, branch, structure, seed, scheme, code, label, chosen_at } (옛 코드면 family·palette·radius·density)
 //   src/styles/tokens.css       고른 조합의 토큰(첫 줄 주석에 조합 코드). 밝기 자동이면 밝게 + 어둡게 두 블록
 //   src/styles/base.css         .owner/design/src/base.css 복사(화면 공통 뼈대)
-//   src/styles/layout.css       .owner/design/src/layout-<구조>.css 복사(고른 구조의 뼈대)
+//   src/styles/layout.css       .owner/design/src/layout-<구조>.css (본문 모양) + layout-nav-<메뉴>.css (메뉴 위치) 를 이어 붙임
 //   src/styles/fonts/           고른 스타일이 쓰는 글꼴 파일(woff2)과 라이선스 전문(LICENSE-*.txt)
 //   이미 있던 세 CSS 가 새것과 다르면 .owner/tmp/design-backup/<시각>/ 에 먼저 남긴다.
 //
@@ -53,8 +60,9 @@ const lf = (s) => String(s).replace(/^\uFEFF/, '').replace(/\r\n/g, '\n')
 
 // 선택창이 돌려면 있어야 하는 것(설치기가 .owner/design/ 에 넣는다)
 const REQUIRED = [
-  'index.html', 'app/color-engine.js', 'app/design-rules.js', 'app/picker.js', 'app/picker.css', 'app/mock.js',
+  'index.html', 'app/color-engine.js', 'app/design-rules.js', 'app/selector.js', 'app/selector.css',
   'src/base.css', 'src/layout-list.css', 'src/layout-board.css', 'src/layout-card.css',
+  'src/layout-nav-side.css', 'src/layout-nav-top.css', 'src/layout-nav-bottom.css',
   'src/list.html', 'src/board.html', 'src/card.html',
   'fonts/Pretendard-Regular.subset.woff2', 'fonts/Pretendard-Bold.subset.woff2', 'fonts/GowunBatang-Bold.subset.woff2',
   'fonts/LICENSE-Pretendard.txt', 'fonts/LICENSE-GowunBatang.txt',
@@ -72,6 +80,7 @@ function loadRules() {
   }
   const R = box.ERP_DESIGN
   if (!R || typeof R.tokenCss !== 'function' || typeof R.parseCode !== 'function' || typeof R.selfCheck !== 'function') throw new Error('규칙 파일에서 ERP_DESIGN 을 찾지 못했습니다')
+  if (!Array.isArray(R.themes) || typeof R.parseThemeCode !== 'function') throw new Error('규칙 파일이 옛 판입니다(테마 코드를 모름) — 강의 자료의 설치기를 다시 실행하세요')
   return R
 }
 
@@ -153,14 +162,19 @@ function writeChoice(R, input) {
   const out = [
     { key: 'tokens', file: path.join(styles, 'tokens.css'), body: lf(R.tokenCss(sel, { fontBase: './fonts/' })) },
     { key: 'base', file: path.join(styles, 'base.css'), body: lf(fs.readFileSync(path.join(DESIGN, 'src', 'base.css'), 'utf8')) },
-    { key: 'layout', file: path.join(styles, 'layout.css'), body: lf(fs.readFileSync(path.join(DESIGN, 'src', `layout-${sel.structure}.css`), 'utf8')) },
+    { key: 'layout', file: path.join(styles, 'layout.css'), body: layoutBody(sel) },
   ]
   for (const f of fonts.files) out.push({ key: 'font', file: path.join(fontsDir, f), body: fs.readFileSync(path.join(DESIGN, 'fonts', f)) })
   for (const f of fonts.licenses) out.push({ key: 'license', file: path.join(fontsDir, f), body: lf(fs.readFileSync(path.join(DESIGN, 'fonts', f), 'utf8')) })
-  const choice = {
-    structure: sel.structure, family: sel.family, palette: sel.palette, seed: sel.seed,
-    scheme: sel.scheme, radius: sel.radius, density: sel.density, code, chosen_at: new Date().toISOString(),
-  }
+  const choice = sel.theme
+    ? {
+        theme: sel.theme, seed: sel.seed, scheme: sel.scheme, nav: sel.nav, body: sel.body, structure: sel.structure,
+        branch: input.branch || null, code, label: R.label(sel), chosen_at: new Date().toISOString(),
+      }
+    : {
+        structure: sel.structure, family: sel.family, palette: sel.palette, seed: sel.seed,
+        scheme: sel.scheme, radius: sel.radius, density: sel.density, code, chosen_at: new Date().toISOString(),
+      }
   out.push({ key: 'choice', file: path.join(DESIGN, 'choice.json'), body: JSON.stringify(choice, null, 2) + '\n' })
   out.forEach((o) => assertSafeTarget(o.file))
 
@@ -187,23 +201,34 @@ function writeChoice(R, input) {
   }
 }
 
+// layout.css = 본문 모양(구조) 뼈대 + 메뉴 위치 뼈대(새 코드일 때). 메뉴 위치 절이 뒤에 와서 구조 쪽 메뉴 배치를 덮는다
+function layoutBody(sel) {
+  const parts = [lf(fs.readFileSync(path.join(DESIGN, 'src', `layout-${sel.structure}.css`), 'utf8'))]
+  if (sel.nav) {
+    parts.push(`\n/* ── 메뉴 위치: ${sel.nav} (선택창 2단계 「메뉴 위치」 · 조합 코드 theme-…-${sel.nav}-${sel.body}) ── */\n`)
+    parts.push(lf(fs.readFileSync(path.join(DESIGN, 'src', `layout-nav-${sel.nav}.css`), 'utf8')))
+  }
+  return parts.join('\n')
+}
+
 function printDone(r) {
   console.log('')
   console.log(`골랐습니다: ${r.label} (${r.code})`)
+  console.log(`대표님께 소리 내어 확인: 「${r.label}(${r.code})로 하겠습니다.」`)
   console.log('만든 파일:')
   r.files.forEach((f) => console.log(`  ${f}`))
   if (r.backup) console.log(`전에 있던 파일은 여기에 남겼습니다: ${r.backup}`)
-  console.log('다음: company/design.md 를 쓰고 .owner/state.md·progress.json 을 고칩니다(indeans-erp-design 절차).')
+  console.log('다음: company/design.md 를 쓰고 .owner/state.md·progress.json 을 고칩니다(indeans-erp-design 절차). 초안 계획은 새 대화에서(B1, Plan 모드).')
 }
 
 function codeHelp(R) {
   return [
-    '형식: <구조>-<스타일>-<색 또는 custom-RRGGBB>-<밝기>[-<모서리>][-<밀도>]   예) board-soft-teal-auto · board-indeans-custom-2a6f9e-auto',
-    `  구조: ${R.structures.map((s) => s.id).join(' · ')}`,
-    `  스타일: ${R.families.map((s) => s.id).join(' · ')}`,
-    `  색: ${R.palettes.map((s) => s.id).join(' · ')} · custom-RRGGBB(내 색, 예 custom-2a6f9e)`,
-    `  밝기: ${R.schemes.map((s) => s.id).join(' · ')}`,
-    '  모서리(기본이면 생략): sharp · round   밀도(기본이면 생략): compact · roomy',
+    '형식: theme-<테마>-<RRGGBB>-<밝기>-<메뉴>-<본문>   예) theme-large-CA8A04-light-bottom-cards · theme-list-0F766E-light-side-table',
+    `  테마: ${R.themes.map((t) => `${t.id}(${t.ko})`).join(' · ')}`,
+    '  색: # 없이 여섯 자리(0~9, A~F) — 선택창 아래에 나온 그대로',
+    '  밝기: light(밝게) · dark(어둡게) · auto(기기 설정)',
+    `  메뉴: ${R.navs.map((n) => `${n.id}(${n.ko})`).join(' · ')}   본문: ${R.bodies.map((b) => `${b.id}(${b.ko})`).join(' · ')}`,
+    '옛 형식(<구조>-<스타일>-<색>-<밝기>)도 읽습니다.',
   ].join('\n')
 }
 
@@ -228,11 +253,20 @@ async function runCheck() {
     }
     if (bad.length) problems.push(...bad.slice(0, 5).map((b) => `대비 미달 ${b}`))
     else lines.push(`대비: 스타일×색 ${sets}벌 · 밝게·어둡게 ${pairs}짝 모두 통과`)
+    const tbad = []
+    let tsets = 0
+    for (const t of R.themes) for (const scheme of ['light', 'dark']) {
+      const r = R.selfCheck({ theme: t.id, scheme })
+      tsets++
+      if (!r.ok) tbad.push(`theme-${t.id}-${scheme}: ${r.fails.slice(0, 2).join(', ')}`)
+    }
+    if (tbad.length) problems.push(...tbad.slice(0, 5).map((b) => `대비 미달 ${b}`))
+    else lines.push(`테마: ${R.themes.length}개 × 밝게·어둡게 ${tsets}벌 대비 통과 · 업종 추천 ${Object.keys(R.branchTheme).join('·')}`)
     const needFonts = new Set(R.families.flatMap((f) => { const x = R.fontsOf({ family: f.id }); return [...x.files, ...x.licenses] }))
     const noFont = [...needFonts].filter((f) => !fs.existsSync(path.join(DESIGN, 'fonts', f)))
     if (noFont.length) problems.push(`글꼴 파일이 없습니다(.owner/design/fonts/): ${noFont.join(', ')}`)
     else lines.push(`글꼴: ${needFonts.size}개 파일 있음(.owner/design/fonts/)`)
-    try { R.tokenCss({ structure: 'list', ...R.defaults }) } catch (e) { problems.push(`토큰을 만들지 못했습니다: ${e.message}`) }
+    try { R.tokenCss({ structure: 'list', ...R.defaults }); R.tokenCss(R.parseCode('theme-list-0F766E-light-side-table')) } catch (e) { problems.push(`토큰을 만들지 못했습니다: ${e.message}`) }
   }
   try {
     const port = await freePort()
@@ -372,10 +406,19 @@ async function runServer(R, recommend) {
       if (!sel || typeof sel !== 'object' || Array.isArray(sel)) return json(res, 400, { ok: false, error: '보낸 내용의 모양이 틀렸습니다' })
       let result
       try {
-        result = writeChoice(R, {
-          structure: field(sel.structure), family: field(sel.family), palette: field(sel.palette), seed: field(sel.seed),
-          scheme: field(sel.scheme), radius: field(sel.radius), density: field(sel.density),
-        })
+        if (sel.code != null) {
+          // 2단계 선택창: 조합 코드 하나를 보낸다(theme-<테마>-<RRGGBB>-<밝기>-<메뉴>-<본문>)
+          const parsed = R.parseCode(String(sel.code).slice(0, 120))
+          if (!parsed) throw new Error(`조합 코드를 읽지 못했습니다: ${String(sel.code).slice(0, 80)}`)
+          if (recommend && recommend.branch) parsed.branch = recommend.branch
+          result = writeChoice(R, parsed)
+        } else {
+          result = writeChoice(R, {
+            theme: field(sel.theme), nav: field(sel.nav), body: field(sel.body),
+            structure: field(sel.structure), family: field(sel.family), palette: field(sel.palette), seed: field(sel.seed),
+            scheme: field(sel.scheme), radius: field(sel.radius), density: field(sel.density),
+          })
+        }
       } catch (e) {
         return json(res, 400, { ok: false, error: e.message })
       }
@@ -417,15 +460,28 @@ async function runServer(R, recommend) {
   port = server.address().port
   resetIdle()
 
-  const url = `http://127.0.0.1:${port}/`
+  const query = recommend && recommend.branch ? `?branch=${recommend.branch}` : recommend && recommend.theme ? `?theme=${recommend.theme}` : ''
+  const url = `http://127.0.0.1:${port}/${query}`
   const bar = '='.repeat(Math.max(44, url.length + 12))
   console.log(bar)
   console.log(`  디자인 선택창:  ${url}`)
   console.log(bar)
   console.log('브라우저가 저절로 열리지 않으면 위 주소를 브라우저 주소창에 붙여 넣으세요.')
   console.log('그래도 안 되면 이 파일을 직접 여세요(저장 기능이 없는 판 — 고른 뒤 나오는 조합 코드를 AI 에게 말합니다):')
-  console.log(`  ${path.join(DESIGN, 'index.html')}`)
+  console.log(`  ${path.join(DESIGN, 'index.html')}${query}`)
+  console.log('선택창: ① 테마 하나 → 「이 테마로 세부 설정」 → ② 밝기·메뉴 위치·본문 모양 → 「이걸로 하기」(여기서 저장됩니다).')
   if (recommend) console.log(`추천 표시: ${recommendLabel(R, recommend)}`)
+  // 대표에게 그대로 옮길 말(11-17 r2 반영 — AI 가 주소만 알리고 추천 테마·누를 순서를 빼먹었다)
+  const recTheme = recommend && recommend.theme ? (R.themes.find((x) => x.id === recommend.theme) || {}).ko : null
+  console.log('')
+  console.log('── 대표님께 그대로 전할 말(줄이지 말고 옮기세요) ──')
+  console.log(recTheme
+    ? `선택창을 엽니다. 인터뷰에서 고르신 업종에 맞춰 「${recTheme}」 테마를 먼저 골라 두었어요 — 다른 테마를 고르셔도 됩니다.`
+    : '선택창을 엽니다. 네 가지 테마 중 하나를 골라 주세요.')
+  console.log('① 테마 하나를 고르고 「이 테마로 세부 설정」을 누르세요.')
+  console.log('② 밝기·메뉴 위치·본문 모양을 보고 맨 아래 「이걸로 하기」를 누르세요. 누르면 저장되고 창은 닫으셔도 됩니다.')
+  console.log(`창이 안 보이면 이 주소를 브라우저 주소창에 붙여 넣으세요: ${url}`)
+  console.log('── 여기까지 ──')
   console.log(`대표님이 '이걸로 하기'를 누를 때까지 기다립니다(${minutes}분 동안 아무 반응이 없으면 닫힙니다). 멈추려면 Ctrl+C.`)
 
   if (!has('--no-open')) {
@@ -444,6 +500,16 @@ async function runServer(R, recommend) {
 }
 
 function recommendLabel(R, rec) {
+  if (rec.theme) {
+    const t = R.themes.find((x) => x.id === rec.theme)
+    const parts = [t ? t.ko : rec.theme]
+    if (rec.branch) parts.push(`업종 가지 ${rec.branch} ${R.branchName[rec.branch]}`)
+    if (rec.seed) parts.push(`색 ${rec.seed}`)
+    if (rec.scheme) parts.push(rec.scheme)
+    if (rec.nav) parts.push(`메뉴 ${rec.nav}`)
+    if (rec.body) parts.push(`본문 ${rec.body}`)
+    return parts.join(' · ')
+  }
   const parts = []
   if (rec.structure) parts.push(R.byId(R.structures, rec.structure).ko)
   if (rec.family) parts.push(R.byId(R.families, rec.family).ko)
@@ -470,10 +536,20 @@ if (has('--check')) {
   }
 
   let recommend = null
+  const brArg = flag('--branch')
   const recArg = flag('--recommend')
-  if (recArg) {
+  if (brArg) {
+    const br = R.parseBranch(brArg)
+    if (br) recommend = { theme: R.branchTheme[br], branch: br }
+    else console.log(`업종 가지를 읽지 못해 추천 없이 엽니다: ${brArg} (B1~B8 중 하나, 예: --branch B5)`)
+  }
+  if (!recommend && recArg) {
     recommend = R.parseRecommend(recArg)
-    if (!recommend) console.log(`추천 조합을 읽지 못해 추천 표시 없이 엽니다: ${recArg} (형식: 구조[-스타일[-색[-밝기]]], 예: board-soft-teal)`)
+    if (recommend && !recommend.theme) {
+      // 옛 추천(list-bold 등)은 2단계 선택창이 모른다 — 테마 없이 열고 알린다
+      console.log(`옛 추천 형식이라 추천 없이 엽니다: ${recArg} — 업종 가지가 있으면 --branch B1~B8 로 여세요.`)
+      recommend = null
+    } else if (!recommend) console.log(`추천을 읽지 못해 추천 표시 없이 엽니다: ${recArg} (예: --branch B5 · --recommend theme-list)`)
   }
   if (fs.existsSync(path.join(DESIGN, 'choice.json'))) {
     try { console.log(`지금 고른 조합: ${JSON.parse(fs.readFileSync(path.join(DESIGN, 'choice.json'), 'utf8')).code} — 다시 고르면 바뀝니다.`) } catch { /* 무시 */ }

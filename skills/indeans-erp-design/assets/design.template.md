@@ -1,22 +1,24 @@
 # 우리 앱 디자인 방향
 
-> 작성: indeans-erp-design · {날짜} · v{번호}
+> 작성: indeans-erp-design · {날짜} · v{번호} · 2단계 선택창(11-17 개정)
 > 절 제목과 순서를 바꾸지 않는다. `indeans-erp-draft`와 화면 감독 에이전트(`erp-design-supervisor`)가 이 문서를 읽는다.
 
 ## 고른 조합
 
 | 항목 | 값 |
 |---|---|
-| 화면 구조 | {목록·표형 / 진행 보드형 / 카드·상세형} (`{list / board / card}`) |
-| 스타일 | {차분한 기본 / 에디토리얼 미니멀 / 소프트 / 선명한 대비 / 따뜻한 종이 / 인디언즈 스타일 / 단단한 기업형} (`{calm / editorial / soft / bold / paper / indeans / corporate}`) |
-| 색 | {남색 / 차콜 / 녹색 / 갈색 / 청록 / 와인 / 테라코타 / 슬레이트 / 올리브 / 자두} (`{navy / … / plum}`) — 또는 **내 색** `{#RRGGBB}` (`custom-{rrggbb}`) |
-| 밝기 | {자동(기기 설정을 따름) / 밝게 / 어둡게} (`{auto / light / dark}`) |
-| 모서리 | {기본 / 각지게 / 둥글게} (`{base / sharp / round}`) |
-| 밀도 | {기본 / 촘촘 / 넉넉} (`{base / compact / roomy}`) |
-| 조합 코드 | `{구조-스타일-색-밝기[-모서리][-밀도]}` (예: `board-soft-teal-auto` · `board-indeans-custom-2a6f9e-auto`) — `src/styles/tokens.css` 첫 줄 주석과 같아야 한다 |
+| 테마 | {따뜻한 매장 / 큰 글씨 / 촘촘한 목록 / 우리 회사 색} (`{shop / large / list / brand}`) |
+| 색 | `{#RRGGBB}` (테마 기본 색 / 우리 회사 색) |
+| 밝기 | {밝게 / 어둡게} (`{light / dark}`) |
+| 메뉴 위치 | {왼쪽 / 위쪽 / 아래 탭} (`{side / top / bottom}`) — `src/styles/layout.css` 끝의 메뉴 위치 절 |
+| 본문 모양 | {카드 / 목록 / 보드} (`{cards / table / board}`) → 화면 뼈대 `{card / list / board}` (`.owner/design/src/{구조}.html`) |
+| 조합 코드 | `theme-{테마}-{RRGGBB}-{밝기}-{메뉴}-{본문}` — `src/styles/tokens.css` 첫 줄 주석과 같아야 한다 |
+| 추천 | {업종 가지 B{번호} → 추천 테마 / 추천 없음(업종 미정)} |
 | 색 설정 파일 | `src/styles/tokens.css` · 뼈대 `src/styles/base.css`·`layout.css` · 글꼴 `src/styles/fonts/`(라이선스 포함) · 선택 기록 `.owner/design/choice.json` |
 | 고른 날 | {날짜} |
-| 고른 방법 | {선택창에서 '이걸로 하기' / 코드로 만들기(--code)} |
+| 고른 방법 | {선택창에서 「이걸로 하기」 / 문장·코드로 만들기(--code) / 「알아서」 — 추천 테마 기본값} |
+
+> 옛 코드(`<구조>-<스타일>-<색>-<밝기>`)로 고른 경우만 아래 옛 표를 쓴다: 화면 구조 · 스타일 · 색 · 밝기 · 모서리 · 밀도.
 
 ## 내 색 (내 색을 골랐을 때만 — 아니면 이 절을 지운다)
 
@@ -33,7 +35,7 @@
 
 ## 이 구조를 고른 이유
 
-대표가 한 말을 그대로 적는다. 다음 회차에 "왜 이걸 골랐지"가 나올 때 여기를 읽는다.
+대표가 한 말을 그대로 적는다. 나중에 "왜 이걸 골랐지"가 나올 때 여기를 읽는다.
 
 - {예: 하루에 같은 목록을 여러 번 보신다고 하셔서}
 - 고객이 직접 여는 화면이 있는가: {예 / 아니오}

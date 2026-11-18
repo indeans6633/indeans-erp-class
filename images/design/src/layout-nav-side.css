@@ -1,0 +1,18 @@
+/* 메뉴 위치: 왼쪽 — 2단계 선택창 「메뉴 위치」(theme-…-side-…). design-pick.mjs 가 layout.css 끝에 붙인다.
+   본문 모양(layout-<구조>.css)이 정한 .shell 을 왼쪽 메뉴 + 본문 두 칸으로 바꾼다. 메뉴는 .shell 의 첫 nav(.side 또는 .tabs).
+   폰(680px 이하)에서는 메뉴를 위로 올려 옆으로 넘긴다. */
+.shell { display: grid; grid-template-columns: minmax(0, 188px) minmax(0, 1fr); grid-template-rows: none; min-height: 0; }
+.shell > nav {
+  background: var(--surface); border-right: var(--line-w, 1px) solid var(--border); border-bottom: 0;
+  padding: var(--sp-4) var(--sp-3); display: flex; flex-direction: column; gap: var(--sp-1); overflow: visible;
+}
+.shell > nav a {
+  display: flex; align-items: center; min-height: var(--tap); flex: none;
+  padding: 0 var(--sp-3); border-radius: var(--radius-sm); border-bottom: 0; margin-bottom: 0;
+  color: var(--text-2); text-decoration: none; font-size: var(--fs-label); font-weight: var(--fw-medium);
+}
+.shell > nav a[aria-current="page"] { background: var(--primary-soft); color: var(--primary-text, var(--primary)); }
+@media (max-width: 680px) {
+  .shell { grid-template-columns: minmax(0, 1fr); }
+  .shell > nav { flex-direction: row; overflow-x: auto; border-right: 0; border-bottom: var(--line-w, 1px) solid var(--border); padding: var(--sp-2) var(--sp-3); }
+}

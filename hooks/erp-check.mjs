@@ -277,10 +277,20 @@ const cosmeticLine = (l) => {
 const cssUnwrap = (l) => l.replace(/^[^{}]*\{\s*/, '').replace(/\s*\}\s*$/, '').trim()
 const cosmeticIn = (p, l) => cosmeticLine(/.(css|scss|less)$/i.test(p) ? cssUnwrap(l) : l)
 
+// 앱이 아직 없나(11-17 r2 반영) — 루트에 index.html·package.json 이 없고, src/ 안에 styles/ 밖 파일이 하나도 없으면 「앱 없음」.
+// 이때 src/styles/ (디자인 선택창이 만든 토큰·뼈대 CSS·글꼴)만 바뀐 것은 실제로 달라지는 화면이 없으므로 검수를 요구하지 않는다.
+// 앱이 생긴 뒤의 스타일 변경은 전과 같이 판정한다.
+const appExists = (() => {
+  if (['index.html', 'package.json'].some((f) => fs.existsSync(path.join(root, f)))) return true
+  const walkSrc = (d) => { let ents = []; try { ents = fs.readdirSync(d, { withFileTypes: true }) } catch { return false }
+    return ents.some((e) => { const a = path.join(d, e.name); if (e.isDirectory()) return path.relative(root, a).split(path.sep).join('/') !== 'src/styles' && walkSrc(a); return true }) }
+  return walkSrc(path.join(root, 'src'))
+})()
 const impactful = []
 const skipped = [...markSkipped]
 for (const p of [...changed].sort()) {
   if (isSkipPath(p)) { skipped.push({ p, why: '문서·자료' }); continue }
+  if (!appExists && /^src\/styles\//.test(p)) { skipped.push({ p, why: '디자인 설정 파일만(앱 화면 아직 없음)' }); continue }
   const hard = HARD_PATH.find((h) => h.re.test(p))
   if (hard) { impactful.push({ p, why: hard.why }); continue }
 
@@ -370,7 +380,7 @@ function finish({ need, impactful = [], skipped = [], note = '', nagCount = 0 })
       '',
       '`indeans-erp-check` 스킬을 읽고 위험 등급표에 따라 감독 판정(등급이 요구할 때) → 검증 실측 → 작업 보고서까지 마친 뒤 종료하세요.',
       '검수를 마치면 .owner/last-check.json 을 갱신해 같은 변경에 다시 요구하지 않게 합니다.',
-      '표현만 고친 것이어서 검수가 필요 없다고 판단되면, 그 이유를 한 줄로 대표에게 말한 뒤 같은 파일을 갱신하세요.',
+      '표현만 고친 것이어서 검수가 필요 없다고 판단되면, 대표에게는 아무 말도 하지 마세요(검수·확인 알림·건너뜀 이야기를 꺼내지 않습니다 — 대표가 시킨 일이 아닙니다). 같은 파일을 갱신한 뒤 바로 커밋해 작업 폴더에 남기지 말고(기록 파일은 검수 대상이 아닙니다), 원래 하던 작업의 다음 말·끝맺음을 그대로 이어 가세요.',
       '이때 commit 에 지금 HEAD 를, skipped_files 에 생략한 파일 목록을 적습니다 — 비워 두면 다음에 같은 파일을 또 요구합니다.',
     ].join('\n')
     if (tool === 'codex') {

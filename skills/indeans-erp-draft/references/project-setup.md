@@ -1,12 +1,14 @@
 # 앱 뼈대 만들기 (Vite 프로젝트 · 화면 사진 도구 · 파일 구조)
 
+> **1일 차 라이브 판(11-17 리허설 반영)** — 공개 번들 v3.2 원본에서 수업 단위 말만 바꿨다. 비교용 원본: `proposed-skills/_원본/`.
+
 `indeans-erp-draft` 절차 3~5가 읽는다. 명령 원문은 여기에 있고, SKILL.md는 순서만 관리한다. 위에서부터 그대로 한다.
 
 ---
 
 ## 1. Vite 프로젝트 만들기
 
-프로젝트 폴더에는 이미 `company/`·`course/`·`.owner/`(1회차 산출물과 설치본)가 있다. **빈 폴더가 아니면 생성기가 기존 파일을 지울지 물어 온다.** 그 질문을 피하려고 임시 폴더에 만든 뒤 옮긴다.
+프로젝트 폴더에는 이미 `company/`·`course/`·`.owner/`(1일 차 산출물과 설치본)가 있다. **빈 폴더가 아니면 생성기가 기존 파일을 지울지 물어 온다.** 그 질문을 피하려고 임시 폴더에 만든 뒤 옮긴다.
 
 ```
 npm create vite@latest .vite-init -- --template react-ts
@@ -27,10 +29,10 @@ rm -rf .vite-init
 ```
 
 - **생성기가 "기존 파일을 지울까요"라고 물으면 절대 고르지 않는다.** `company/` 문서가 날아간다. 이 질문이 나왔다면 임시 폴더(`.vite-init`)가 아니라 프로젝트 폴더에 만들려 한 것이다 — 취소하고 위 명령을 다시 본다.
-- 옮긴 뒤 `package.json`의 `name`이 임시 폴더 이름(`vite-init`)으로 들어가 있다. **프로젝트 폴더 이름으로 바꾼다** — 이 회차 후반 배포 때 이 이름이 주소에 쓰인다.
+- 옮긴 뒤 `package.json`의 `name`이 임시 폴더 이름(`vite-init`)으로 들어가 있다. **프로젝트 폴더 이름으로 바꾼다** — 다음 단계 배포 때 이 이름이 주소에 쓰인다.
 - 숨은 파일(`.gitignore`)도 함께 와야 한다. 안 왔으면 따로 복사한다. `.gitignore`에 `node_modules`·`.env.local`·`.owner/tmp/` 세 줄이 있는지 확인하고 빠진 줄은 넣는다(`.owner/tmp/`는 스킬이 쓰고 버리는 임시 자리라 커밋하지 않는다). 생성기의 `.gitignore`가 원래 있던 것을 덮었으면 덮이기 전 줄(`git diff .gitignore`)을 되살린다.
 - 프로젝트에 이미 `README.md`가 있으면 덮이지 않게 주의한다(절차 15에서 우리 것으로 다시 쓴다).
-- **`src/styles/`(`tokens.css`·`base.css`·`layout.css`)를 지우지 않는다.** 1회차에 디자인 스킬이 넣어 둔 파일이다. 생성기가 덮었으면 `git restore src/styles`로 되살린다.
+- **`src/styles/`(`tokens.css`·`base.css`·`layout.css`)를 지우지 않는다.** 1일 차에 디자인 스킬이 넣어 둔 파일이다. 생성기가 덮었으면 `git restore src/styles`로 되살린다.
 
 그다음:
 

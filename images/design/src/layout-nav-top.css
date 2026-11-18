@@ -1,0 +1,16 @@
+/* 메뉴 위치: 위쪽 탭 — 2단계 선택창 「메뉴 위치」(theme-…-top-…). design-pick.mjs 가 layout.css 끝에 붙인다.
+   .shell 을 위 탭 줄 + 본문으로 둔다. 메뉴는 .shell 의 첫 nav(.side 또는 .tabs). 폰에서도 위에 두고 옆으로 넘긴다. */
+.shell { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); min-height: 0; }
+.shell > nav {
+  display: flex; flex-direction: row; gap: var(--sp-4); padding: 0 var(--sp-5); overflow-x: auto;
+  background: var(--surface); border-right: 0; border-bottom: var(--line-w, 1px) solid var(--border);
+}
+.shell > nav a {
+  display: flex; align-items: center; min-height: var(--tap); flex: none; padding: 0; border-radius: 0;
+  color: var(--text-2); text-decoration: none; font-size: var(--fs-label); font-weight: var(--fw-medium);
+  border-bottom: 2px solid transparent; margin-bottom: -1px; background: none;
+}
+.shell > nav a[aria-current="page"] { color: var(--primary-text, var(--primary)); border-bottom-color: var(--primary-text, var(--primary)); background: none; }
+@media (max-width: 680px) {
+  .shell > nav { padding: 0 var(--sp-3); }
+}

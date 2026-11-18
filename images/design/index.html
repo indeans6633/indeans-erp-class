@@ -4,105 +4,92 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>우리 앱 화면 고르기</title>
-<!-- 디자인 선택창. AI 가 `node .owner/hooks/design-pick.mjs` 로 열면 '이걸로 하기'가 고른 조합을 바로 저장한다.
-     이 파일을 직접 두 번 눌러 열어도(file://) 고를 수 있다 — 그때는 저장 대신 조합 코드를 보여 준다.
-     인터넷 연결·외부 라이브러리 없이 돈다. 글꼴은 fonts/ 의 파일만 쓴다.
-     규칙(이름·모양 값)은 app/design-rules.js, 색 계산은 app/color-engine.js 한 곳에 있다. -->
-<link rel="stylesheet" href="app/picker.css">
+<!-- 인디언즈 ERP 클래스 · 디자인 선택창 (2026-11-16 17:40 개정).
+     1단계 테마 4개(따뜻한 매장·큰 글씨·촘촘한 목록·우리 회사 색, 인터뷰 업종 B1~B8 매핑) → 2단계 세부 설정(밝기·미리 보기·우리 회사 색).
+     ?branch=B3 또는 ?theme=shop 으로 추천 테마를 미리 고를 수 있다. 조합 코드는 theme-{id}-{SEED}-{scheme}.
+     미리 보기 화면은 예시입니다. 인터넷 없이 돈다: 글꼴 fonts/, 색 계산 app/color-engine.js. 모든 데이터는 가짜입니다. -->
+<link rel="stylesheet" href="app/selector.css">
 </head>
-<body>
+<body class="step-theme">
 <div class="pk">
   <header class="pk-head">
+    <div class="pk-k">INDEANS ERP CLASS · 디자인 고르기 · 2단계</div>
     <h1>우리 앱 화면 고르기</h1>
-    <p class="pk-lead">두 가지만 고르시면 됩니다 — 화면 구조와 스타일. 색·모서리·밀도·밝기는 '세부 조절'을 열 때만 바꿉니다. 모든 화면은 같은 예시 회사(○○상사)·같은 예시 데이터로 그렸으니 모양과 색만 비교하시면 됩니다. 나중에 바꿀 수 있습니다.</p>
-    <p class="pk-mode" id="pk-mode" role="status">선택창을 준비하고 있습니다.</p>
+    <p class="pk-lead" id="lead">1단계: 테마를 하나만 고르세요. 고르면 그 테마로 밝기·미리 보기 등 세부 설정을 합니다. 각 카드 아래 「이런 업종」은 인터뷰 가지(B1~B8)에 맞춘 추천입니다. 화면에 나오는 회사·사람은 모두 가짜 예시입니다.</p>
   </header>
 
-  <p class="pk-fatal" id="pk-fatal" hidden>선택창 규칙 파일(app/color-engine.js · app/design-rules.js)을 읽지 못했습니다. 설치가 덜 됐을 수 있습니다. AI 에게 "선택창 규칙 파일을 못 읽는다"고 알려 주세요.</p>
+  <section id="themeStep" class="theme-step">
+    <p class="rec-note" id="recNote" hidden></p>
+    <h2 class="pk-h">① 테마 하나만</h2>
+    <div class="themes lg" id="themes" role="radiogroup" aria-label="테마"></div>
+    <button class="go" id="toDetail" disabled>이 테마로 세부 설정</button>
+  </section>
 
-  <div class="pk-layout">
-    <div class="pk-steps">
-      <fieldset class="pk-step">
-        <legend><span class="pk-no" aria-hidden="true">1</span>화면 구조</legend>
-        <p class="pk-hint">회사 일이 어떤 모양으로 보여야 편한지로 고릅니다.</p>
-        <div class="pk-opts" id="opts-structure"></div>
-      </fieldset>
+  <div class="pk-body" id="detailStep" hidden>
+    <aside class="pk-side">
+      <button type="button" class="back" id="backTheme">← 테마 다시 고르기</button>
+      <h2 class="pk-h">고른 테마</h2>
+      <p class="chosen" id="chosenName"></p>
 
-      <fieldset class="pk-step">
-        <legend><span class="pk-no" aria-hidden="true">2</span>스타일</legend>
-        <p class="pk-hint">글꼴·모서리·선·여백·색의 분위기를 묶은 추천 조합입니다. 작은 견본이 그 조합의 모습입니다.</p>
-        <div class="pk-opts pk-combos" id="opts-family"></div>
-      </fieldset>
-
-      <details class="pk-step pk-more" id="pk-more">
-        <summary><span class="pk-no" aria-hidden="true">3</span><span class="pk-more-t">세부 조절</span><span class="pk-more-s">색 · 모서리 · 밀도 · 밝기 — 필요할 때만</span></summary>
-        <div class="pk-more-body">
-          <fieldset class="pk-sub">
-            <legend>색</legend>
-            <p class="pk-hint">강조색 하나를 고릅니다. 간판·명함 색이 있으면 '내 색'에 넣어 보세요. 글자가 잘 읽히도록 필요한 만큼만 자동으로 맞춥니다.</p>
-            <div class="pk-swatches" id="opts-palette" role="radiogroup" aria-label="강조색"></div>
-            <div class="pk-custom" id="pk-custom">
-              <div class="pk-custom-row">
-                <label class="pk-color-l" for="pk-color">내 색 고르기</label>
-                <input class="pk-color" id="pk-color" type="color" value="#2a6f9e">
-                <label class="pk-hex-l" for="pk-hex">색 코드</label>
-                <input class="pk-hex" id="pk-hex" type="text" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="7" placeholder="#2A6F9E" aria-describedby="pk-custom-msg">
-              </div>
-              <ul class="pk-custom-msg" id="pk-custom-msg" aria-live="polite"></ul>
-            </div>
-            <button class="pk-btn" id="pk-reset-color" type="button">이 스타일의 기본색으로</button>
-          </fieldset>
-          <fieldset class="pk-sub">
-            <legend>모서리</legend>
-            <div class="pk-seg" id="opts-radius" role="radiogroup" aria-label="모서리"></div>
-          </fieldset>
-          <fieldset class="pk-sub">
-            <legend>밀도</legend>
-            <p class="pk-hint">촘촘하게 해도 누르는 곳은 손가락 크기 아래로 줄지 않습니다.</p>
-            <div class="pk-seg" id="opts-density" role="radiogroup" aria-label="밀도"></div>
-          </fieldset>
-          <fieldset class="pk-sub">
-            <legend>밝기</legend>
-            <p class="pk-hint">자동은 휴대폰·컴퓨터의 밝기 설정을 따라 밝게·어둡게가 저절로 바뀝니다.</p>
-            <div class="pk-seg" id="opts-scheme" role="radiogroup" aria-label="밝기"></div>
-          </fieldset>
+      <div class="brand" id="brand" hidden>
+        <label for="brandHex">회사 로고 색</label>
+        <div class="brand-row">
+          <input type="color" id="brandPick" value="#6D28D9" aria-label="색 고르기">
+          <input type="text" id="brandHex" value="#6D28D9" maxlength="7" spellcheck="false">
         </div>
-      </details>
-    </div>
+        <p class="brand-note" id="brandNote"></p>
+      </div>
 
-    <section class="pk-preview" aria-label="미리 보기">
+      <h2 class="pk-h">② 밝기</h2>
+      <div class="seg" id="scheme" role="radiogroup" aria-label="밝기">
+        <button data-v="light" aria-pressed="true">밝게</button>
+        <button data-v="dark" aria-pressed="false">어둡게</button>
+      </div>
+
+      <h2 class="pk-h">③ 메뉴 위치</h2>
+      <div class="seg" id="navPos" role="radiogroup" aria-label="메뉴 위치">
+        <button data-v="side">왼쪽</button>
+        <button data-v="top">위쪽</button>
+        <button data-v="bottom">아래</button>
+      </div>
+      <p class="layout-hint">왼쪽은 옆에 두고, 위쪽은 탭, 아래는 휴대폰 아래 탭입니다.</p>
+
+      <h2 class="pk-h">④ 본문 모양</h2>
+      <div class="seg" id="content" role="radiogroup" aria-label="본문 모양">
+        <button data-v="cards">카드</button>
+        <button data-v="table">목록</button>
+        <button data-v="board">보드</button>
+      </div>
+      <p class="layout-hint">카드는 사진이 잘 보이고, 목록은 한 줄씩, 보드는 단계 칸입니다. 테마마다 기본값이 다르고, 여기서 바꿀 수 있습니다.</p>
+
+      <div class="pick">
+        <button class="go" id="go">이걸로 하기</button>
+        <div class="code" id="codeBox" hidden>
+          <p>AI에게 이렇게 말하세요</p>
+          <b id="codeSay"></b>
+          <button class="copy" id="copy">복사</button>
+        </div>
+      </div>
+    </aside>
+
+    <main class="pk-main">
       <div class="pv-bar">
-        <div class="pk-seg" id="opts-screen" role="radiogroup" aria-label="보여 줄 화면"></div>
-        <div class="pk-seg" id="opts-device" role="radiogroup" aria-label="화면 폭"></div>
-        <div class="pk-seg" id="opts-peek" role="radiogroup" aria-label="자동 밝기 미리 보기"></div>
-      </div>
-      <div class="pv-stage" id="pv-stage">
-        <div class="pv-frame" id="pv-frame">
-          <iframe id="pv" title="고른 조합 미리 보기"></iframe>
+        <div class="seg" id="screen" role="tablist" aria-label="화면">
+          <button data-v="inquiry" aria-pressed="false">문의 접수(예)</button>
+          <button data-v="board" aria-pressed="true">진행 보드(예)</button>
+          <button data-v="detail" aria-pressed="false">한 건 상세(예)</button>
+        </div>
+        <div class="seg" id="width" aria-label="폭">
+          <button data-v="phone" aria-pressed="false">휴대폰</button>
+          <button data-v="pc" aria-pressed="true">PC</button>
         </div>
       </div>
-      <p class="pk-note">화면 안의 이름·번호·날짜는 모두 예시입니다. 실제 화면에는 회사에서 쓰는 말과 항목이 들어갑니다. 미리 보기 안의 메뉴·건 이름·'건 등록'을 눌러도 화면이 바뀝니다.</p>
-    </section>
+      <p class="pv-cap" id="pvCap"></p>
+      <div class="stage"><div class="app pc" id="app"></div></div>
+    </main>
   </div>
-
-  <section class="pk-result" id="pk-result" hidden tabindex="-1" aria-live="polite"></section>
-
-  <p class="pk-foot">글꼴: Pretendard · 고운바탕(SIL 오픈 폰트 라이선스 1.1). 라이선스 전문 — <a href="fonts/LICENSE-Pretendard.txt">Pretendard</a> · <a href="fonts/LICENSE-GowunBatang.txt">고운바탕</a>. 가져온 자료의 출처는 강의 자료의 THIRD-PARTY-NOTICES.md 에 있습니다.</p>
 </div>
-
-<div class="pk-bar">
-  <div class="pk-sum" aria-live="polite">
-    <span class="pk-sum-k">고른 조합</span>
-    <strong class="pk-sum-v" id="sum-text">목록·표형 · 차분한 기본 · 남색 · 자동(기기 설정)</strong>
-    <code class="pk-sum-code" id="sum-code">list-calm-navy-auto</code>
-    <span class="pk-block" id="pk-block" hidden></span>
-  </div>
-  <button class="pk-go" id="pk-go" type="button" aria-describedby="pk-block">이걸로 하기</button>
-</div>
-
-<noscript><p class="pk-fatal">이 선택창은 자바스크립트가 켜져 있어야 움직입니다. 브라우저 설정을 확인하거나 AI 에게 "선택창이 움직이지 않는다"고 알려 주세요.</p></noscript>
 <script src="app/color-engine.js"></script>
-<script src="app/design-rules.js"></script>
-<script src="app/picker.js"></script>
+<script src="app/selector.js"></script>
 </body>
 </html>

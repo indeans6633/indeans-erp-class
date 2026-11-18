@@ -14,6 +14,16 @@
  *     예) board-soft-teal-auto · board-indeans-custom-2a6f9e-auto · list-calm-navy-light-round-compact
  *     모서리·밀도는 기본(base)이 아닐 때만 끝에 붙는다.
  *
+ * 2026-11-17 개정(리허설 반영): 2단계 선택창(테마 4 → 세부 설정)의 새 조합 코드도 읽고 만든다.
+ *   새 조합 코드: theme-<테마>-<RRGGBB>-<밝기>-<메뉴>-<본문>
+ *     테마 shop(따뜻한 매장)·large(큰 글씨)·list(촘촘한 목록)·brand(우리 회사 색) · 색 여섯 자리 · 밝기 light·dark(auto 도 읽음)
+ *     메뉴 side(왼쪽)·top(위쪽)·bottom(아래 탭) · 본문 cards(카드)·table(목록)·board(보드)
+ *     예) theme-large-CA8A04-light-bottom-cards · theme-list-0F766E-light-side-table
+ *   본문 모양이 화면 구조를 정한다(cards→card · table→list · board→board). 메뉴 위치는 layout-nav-<메뉴>.css 가 맡는다.
+ *   테마의 모양 값(글자 크기·모서리·누르는 곳·그림자·제목 글꼴)은 선택창(app/selector.js 의 THEMES)과 같게 둔다 —
+ *   제작 점검(tools/check-consistency.mjs [15])이 두 파일의 테마 id·기본 색·기본 배치·업종 추천이 같은지 본다.
+ *   옛 코드(<structure>-<family>-…)도 그대로 읽는다(이미 고른 수강생 · --code 로 옛 코드를 넣은 경우).
+ *
  * 점검 기준(제작 점검이 막는다): 글자색이 바탕 4종 위에서 4.5:1 이상 · 입력 칸·구역 선이 바탕 3종 대비 3:1 이상 ·
  * 글자 크기 4종(+입력 칸) · 굵기 3종 · 본문 14px 이상 · 누르는 곳 40px(손가락 기기 44px) 이상 · 간격은 4의 배수.
  */
@@ -221,6 +231,84 @@
       } }
   ];
 
+
+  /* ── 2단계 선택창의 테마 4 (2026-11-17) ───────────────────────
+     선택창(app/selector.js)의 THEMES 와 id·기본 색·기본 밝기·기본 배치가 같아야 한다.
+     모양 값은 선택창 미리 보기와 같은 인상을 내되 이 파일의 점검 기준(본문 14px·누르는 곳 40/44px·간격 4의 배수)을 지킨다.
+     색은 선택창과 같은 방식(바탕 성격 없이 시드 하나에서 계산 — E.derive(seed, scheme))으로 만든다. */
+  var THEMES = [
+    { id: 'shop', ko: '따뜻한 매장', seed: '#C45C26', scheme: 'light', nav: 'top', body: 'cards',
+      say: '밝은 크림 바탕, 사진이 크고 모서리가 둥글다', fonts: ['pretendard', 'gowun'],
+      font: { title: SERIF, num: SANS },
+      size: { title: 22, body: 15, label: 13, meta: 12, input: 16 },
+      weight: { normal: 400, medium: 600, bold: 700 },
+      leading: { tight: 1.3, body: 1.6 }, tracking: '0em',
+      space: [4, 8, 12, 16, 24, 32],
+      radius: { box: 22, small: 14, button: 999, large: 28 }, line: 1,
+      tap: { base: 46, touch: 48, row: 48 },
+      shadow: function (c, scheme) { return scheme === 'dark' ? ['none', 'none', 'none'] : ['0 8px 24px rgba(80, 40, 16, 0.10)', '0 10px 28px rgba(80, 40, 16, 0.12)', '0 16px 40px rgba(80, 40, 16, 0.16)']; },
+      neutral: undefined },
+    { id: 'large', ko: '큰 글씨', seed: '#CA8A04', scheme: 'light', nav: 'bottom', body: 'cards',
+      say: '글씨와 단추가 크고 줄은 두껍고 모서리는 거의 없다', fonts: ['pretendard'],
+      font: { title: SANS, num: MONO },
+      size: { title: 26, body: 18, label: 16, meta: 15, input: 18 },
+      weight: { normal: 400, medium: 700, bold: 800 },
+      leading: { tight: 1.25, body: 1.5 }, tracking: '-0.03em',
+      space: [4, 8, 12, 16, 20, 28],
+      radius: { box: 4, small: 2, button: 4, large: 6 }, line: 2.5,
+      tap: { base: 56, touch: 56, row: 56 },
+      shadow: null, neutral: undefined },
+    { id: 'list', ko: '촘촘한 목록', seed: '#0F766E', scheme: 'light', nav: 'side', body: 'table',
+      say: '한 화면에 많이, 줄이 반듯하고 글씨는 작다', fonts: ['pretendard'],
+      font: { title: SANS, num: MONO },
+      size: { title: 18, body: 14, label: 13, meta: 12, input: 16 },
+      weight: { normal: 400, medium: 600, bold: 700 },
+      leading: { tight: 1.3, body: 1.45 }, tracking: '-0.02em',
+      space: [4, 8, 12, 16, 20, 24],
+      radius: { box: 2, small: 2, button: 2, large: 4 }, line: 1,
+      tap: { base: 40, touch: 44, row: 40 },
+      shadow: null, neutral: undefined },
+    { id: 'brand', ko: '우리 회사 색', seed: null, scheme: 'dark', nav: 'top', body: 'board',
+      say: '기본이 어두운 화면이고 색 면이 넓게 들어간다', fonts: ['pretendard'],
+      font: { title: SANS, num: MONO },
+      size: { title: 22, body: 16, label: 14, meta: 13, input: 16 },
+      weight: { normal: 400, medium: 600, bold: 700 },
+      leading: { tight: 1.3, body: 1.55 }, tracking: '0.04em',
+      space: [4, 8, 12, 20, 24, 32],
+      radius: { box: 28, small: 18, button: 18, large: 32 }, line: 1,
+      tap: { base: 48, touch: 48, row: 48 },
+      shadow: function (c, scheme) { var v = scheme === 'dark' ? '0 0 0 1px rgba(255, 255, 255, 0.10)' : '0 0 0 1px rgba(0, 0, 0, 0.08)'; return [v, v, v]; },
+      neutral: undefined }
+  ];
+  var BRAND_DEFAULT_SEED = '#6D28D9';
+  var NAVS = [
+    { id: 'side', ko: '왼쪽' },
+    { id: 'top', ko: '위쪽 탭' },
+    { id: 'bottom', ko: '아래 탭' }
+  ];
+  var BODIES = [
+    { id: 'cards', ko: '카드', structure: 'card' },
+    { id: 'table', ko: '목록', structure: 'list' },
+    { id: 'board', ko: '보드', structure: 'board' }
+  ];
+  /* 인터뷰 업종 가지 → 추천 테마(선택창 BRANCH_THEME 과 같다) */
+  var BRANCH_THEME = { B1: 'large', B2: 'shop', B3: 'shop', B4: 'large', B5: 'list', B6: 'shop', B7: 'list', B8: 'brand' };
+  var BRANCH_NAME = {
+    B1: '집 공사·수리·설치', B2: '가게·쇼핑몰', B3: '식당·카페·음식', B4: '예약·방문 서비스',
+    B5: '공장·제작·도매·유통', B6: '학원·교습·강의', B7: '사무 서비스', B8: '그 밖'
+  };
+  function themeOf(id) { return byId(THEMES, id); }
+  function bodyOf(id) { return byId(BODIES, id); }
+  function famOf(sel) { return sel && sel.theme ? themeOf(sel.theme) : byId(FAMILIES, sel && sel.family); }
+  /* 'B1'·'b1'·'1'·'branch-B1'·'가지 1' → 'B1' */
+  function parseBranch(raw) {
+    var u = String(raw == null ? '' : raw).trim().toUpperCase().replace(/^(BRANCH|가지)[\s_-]*/, '');
+    if (/^[1-8]$/.test(u)) return 'B' + u;
+    if (/^B[1-8]$/.test(u)) return u;
+    return '';
+  }
+  function themeSeed(t, seed) { return E.normHex(seed) || t.seed || BRAND_DEFAULT_SEED; }
+
   var DEFAULTS = { structure: 'list', family: 'calm', palette: 'navy', seed: null, scheme: 'auto', radius: 'base', density: 'base' };
 
   /* ── 도우미 ─────────────────────────────────────────────── */
@@ -234,6 +322,21 @@
   /* 고른 것을 고르게 다듬는다(빈 칸은 기본값, 이름 있는 색이면 시드를 그 색으로). 틀린 값은 그대로 두고 isValid 가 막는다 */
   function normalize(sel) {
     sel = sel || {};
+    if (sel.theme != null && sel.theme !== '') {
+      var tid = low(sel.theme), t = themeOf(tid);
+      var tout = {
+        theme: tid,
+        seed: t ? themeSeed(t, sel.seed) : E.normHex(sel.seed),
+        scheme: low(sel.scheme) || (t ? t.scheme : 'light'),
+        nav: low(sel.nav) || (t ? t.nav : ''),
+        body: low(sel.body) || (t ? t.body : ''),
+        palette: 'custom', radius: 'base', density: 'base'
+      };
+      var b = bodyOf(tout.body);
+      tout.structure = b ? b.structure : undefined;
+      tout.family = 'theme-' + tid;
+      return tout;
+    }
     var out = {
       structure: sel.structure == null ? undefined : low(sel.structure),
       family: low(sel.family) || DEFAULTS.family,
@@ -249,6 +352,9 @@
   }
   function isValid(sel, needStructure) {
     if (!sel) return false;
+    if (sel.theme) {
+      return !!themeOf(sel.theme) && !!E.normHex(sel.seed) && !!byId(SCHEMES, sel.scheme) && !!byId(NAVS, sel.nav) && !!bodyOf(sel.body);
+    }
     if ((needStructure || sel.structure != null) && !byId(STRUCTURES, sel.structure)) return false;
     if (!byId(FAMILIES, sel.family) || !byId(SCHEMES, sel.scheme) || !byId(RADII, sel.radius) || !byId(DENSITIES, sel.density)) return false;
     if (sel.palette === 'custom') return !!E.normHex(sel.seed);
@@ -264,6 +370,7 @@
   /* ── 조합 코드 ────────────────────────────────────────────── */
   function makeCode(selIn) {
     var sel = normalize(selIn);
+    if (sel.theme) return ['theme', sel.theme, String(sel.seed).slice(1).toUpperCase(), sel.scheme, sel.nav, sel.body].join('-');
     var parts = [sel.structure, sel.family];
     if (sel.palette === 'custom') parts.push('custom', String(sel.seed).slice(1).toLowerCase());
     else parts.push(sel.palette);
@@ -274,7 +381,28 @@
   }
   /* 조합 코드 읽기 — 위 형식이 기본. 밝기를 빼면 자동(auto)으로 읽는다.
      옛 코드도 읽는다: 4단(list-calm-navy-light) 그대로 · 2단(list-navy — 첫 세트)은 차분한 기본·밝게로. 못 읽으면 null */
+  /* 새 코드: theme-<테마>-<RRGGBB>-<밝기>-<메뉴>-<본문>. 대표가 옮겨 적다 생기는 앞뒤 따옴표·마침표·「로 할게요」는 떼고 읽는다.
+     밝기·메뉴·본문이 빠졌으면 그 테마의 기본값으로 채운다(색이 빠지면 테마 기본 색). 못 읽으면 null */
+  function parseThemeCode(code) {
+    var s = low(code).replace(/^[\s"'`「『(]+|[\s"'`」』).]+$/g, '').replace(/\s*(로|으로)\s*할게요.*$/, '');
+    var m = s.match(/theme-[a-z0-9-]+/);
+    if (!m) return null;
+    var p = m[0].split('-').filter(Boolean), i = 1;
+    var t = themeOf(p[i++]);
+    if (!t) return null;
+    var sel = { theme: t.id };
+    if (i < p.length && /^#?[0-9a-f]{6}$/.test(p[i])) sel.seed = '#' + p[i++].replace('#', '').toUpperCase();
+    for (; i < p.length; i++) {
+      if (!sel.scheme && byId(SCHEMES, p[i])) sel.scheme = p[i];
+      else if (!sel.nav && byId(NAVS, p[i])) sel.nav = p[i];
+      else if (!sel.body && bodyOf(p[i])) sel.body = p[i];
+      else return null;
+    }
+    var out = normalize(sel);
+    return isValid(out, true) ? out : null;
+  }
   function parseCode(code) {
+    if (/theme-/i.test(String(code || ''))) return parseThemeCode(code);
     var p = low(code).replace(/^#/, '').split('-');
     if (p.length < 2 || !byId(STRUCTURES, p[0])) return null;
     var sel = { structure: p[0] }, i = 1;
@@ -296,7 +424,28 @@
     return isValid(out, true) ? out : null;
   }
   /* 추천 읽기 — 앞에서부터 있는 만큼만(구조 · 구조-스타일 · 구조-스타일-색 · …). 없는 칸은 비워 둔다 */
+  /* 새 추천: 업종 가지(B1~B8) 또는 theme-<테마>[-색…]. { theme, branch?, seed?, scheme?, nav?, body? } — 없는 칸은 비워 둔다 */
   function parseRecommend(code) {
+    var raw = String(code == null ? '' : code).trim();
+    var br = parseBranch(raw);
+    if (br) return { theme: BRANCH_THEME[br], branch: br };
+    if (/^theme-/i.test(raw) || themeOf(low(raw))) {
+      var p = low(raw).replace(/^theme-/, '').split('-').filter(Boolean);
+      var t = themeOf(p[0]);
+      if (!t) return null;
+      var rec = { theme: t.id }, i = 1;
+      if (i < p.length && /^[0-9a-f]{6}$/.test(p[i])) rec.seed = '#' + p[i++].toUpperCase();
+      for (; i < p.length; i++) {
+        if (!rec.scheme && byId(SCHEMES, p[i])) rec.scheme = p[i];
+        else if (!rec.nav && byId(NAVS, p[i])) rec.nav = p[i];
+        else if (!rec.body && bodyOf(p[i])) rec.body = p[i];
+        else return null;
+      }
+      return rec;
+    }
+    return parseOldRecommend(code);
+  }
+  function parseOldRecommend(code) {
     var p = low(code).replace(/^#/, '').split('-').filter(Boolean);
     if (!p.length || !byId(STRUCTURES, p[0])) return null;
     var rec = { structure: p[0] }, i = 1;
@@ -316,6 +465,11 @@
   }
   function label(selIn) {
     var sel = normalize(selIn), parts = [];
+    if (sel.theme) {
+      var t = themeOf(sel.theme);
+      return [t ? t.ko : sel.theme, (sel.theme === 'brand' ? '회사 색 ' : '색 ') + sel.seed, byId(SCHEMES, sel.scheme).ko,
+        '메뉴 ' + byId(NAVS, sel.nav).ko, '본문 ' + bodyOf(sel.body).ko].join(' · ');
+    }
     if (sel.structure) parts.push(byId(STRUCTURES, sel.structure).ko);
     parts.push(byId(FAMILIES, sel.family).ko, paletteLabel(sel), byId(SCHEMES, sel.scheme).ko);
     if (sel.radius !== 'base') parts.push('모서리 ' + byId(RADII, sel.radius).ko);
@@ -327,9 +481,9 @@
   var colorCache = {};
   function colors(selIn, scheme) {
     var sel = normalize(selIn);
-    var seed = seedOf(sel);
+    var seed = sel.theme ? sel.seed : seedOf(sel);
     var key = sel.family + '|' + seed + '|' + scheme;
-    if (!colorCache[key]) colorCache[key] = E.derive(seed, scheme, byId(FAMILIES, sel.family).neutral);
+    if (!colorCache[key]) colorCache[key] = sel.theme ? E.derive(seed, scheme) : E.derive(seed, scheme, byId(FAMILIES, sel.family).neutral);
     return colorCache[key];
   }
 
@@ -364,7 +518,7 @@
   /* 토큰 한 벌(밝게 또는 어둡게) — [묶음 제목, 이름, 값, 설명, 밝기마다 다른가]. 순서가 곧 파일의 줄 순서다 */
   function tokens(selIn, scheme) {
     var sel = normalize(selIn);
-    var f = byId(FAMILIES, sel.family);
+    var f = famOf(sel);
     if (!f || !isValid(sel)) throw new Error('알 수 없는 조합입니다: ' + JSON.stringify(selIn));
     var sch = scheme === 'dark' ? 'dark' : 'light';
     var c = colors(sel, sch).c;
@@ -431,7 +585,7 @@
 
   /* 고른 조합이 쓰는 글꼴 파일과 라이선스 파일 */
   function fontsOf(selIn) {
-    var f = byId(FAMILIES, normalize(selIn).family), files = [], licenses = [], faces = [], notes = [];
+    var f = famOf(normalize(selIn)), files = [], licenses = [], faces = [], notes = [];
     f.fonts.forEach(function (k) {
       var set = FONT_SETS[k];
       set.faces.forEach(function (face) { faces.push(face); files.push(face.file); });
@@ -478,6 +632,7 @@
       '   강조색(--primary)은 하나만 두고, 바꾼 줄은 company/design.md 의 "값을 바꾼 곳"에 적는다.',
       '   --primary 는 버튼 면에만(그 위 글자는 --primary-on), 바탕 위 강조 글자·선택 표시선·포커스 테두리는 --primary-text.'
     ];
+    if (sel.theme) head.push('   화면 배치: 메뉴 ' + byId(NAVS, sel.nav).ko + '(layout.css 의 nav-' + sel.nav + ' 절) · 본문 ' + bodyOf(sel.body).ko + '(구조 ' + sel.structure + ' — 목업 .owner/design/src/' + sel.structure + '.html)');
     if (sel.scheme === 'auto') head.push('   밝기 자동: 아래 :root 가 밝게, @media 블록이 어둡게(기기 설정을 따른다). <html data-theme="light|dark"> 로 한쪽을 강제할 수 있다.');
     head[head.length - 1] += ' */';
     var first = sel.scheme === 'dark' ? 'dark' : 'light';
@@ -522,7 +677,14 @@
   }
 
   root.ERP_DESIGN = {
-    version: 2,
+    version: 3,
+    themes: THEMES,
+    navs: NAVS,
+    bodies: BODIES,
+    branchTheme: BRANCH_THEME,
+    branchName: BRANCH_NAME,
+    parseBranch: parseBranch,
+    parseThemeCode: parseThemeCode,
     structures: STRUCTURES,
     families: FAMILIES,
     palettes: PALETTES,

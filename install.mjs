@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // 인디언즈 ERP 클래스 설치기 — 네트워크 호출 없음. 이 저장소에 든 것을 내 ERP 프로젝트에 한 번에 넣는다.
 // 스킬 17종 · 에이전트 4종(감독 2·검증 1·감사 1) · 훅 4종(검수·명령 보호·배포 전 확인·주간 점검 알림)과 도우미 스크립트 4종
-// · 디자인 선택창 · 회차 자료 · 진행 상태 문서 · 프로젝트 지침(CLAUDE.md·AGENTS.md — 없을 때만 네 줄).
+// · 디자인 선택창 · 회차 자료 · 진행 상태 문서 · 프로젝트 지침(CLAUDE.md·AGENTS.md — 없을 때만. 수업 규칙과 「짧은 말 사전」).
 // 회차를 고르는 인자는 없다(통합 번들이다).
 //
 // 사용: node install.mjs --project "C:\path\to\my-erp" [--target both|claude|codex] [--dry-run]
@@ -271,7 +271,10 @@ if (fs.existsSync(progTpl)) {
 // ⑦ 보고서 폴더
 add(path.join(root, 'reports', '.gitkeep'), '', '보고서 폴더', true)
 
-// ⑧ 프로젝트 지침(CLAUDE.md·AGENTS.md) — 없을 때만 네 줄로 만든다. 있으면 절대 건드리지 않고(수강생 파일이다) 빠진 줄만 알려 준다.
+// ⑧ 프로젝트 지침(CLAUDE.md·AGENTS.md) — 없을 때만 만든다. 있으면 건드리지 않고(수강생 파일이다) 빠진 것만 알려 준다.
+//    번들에 project/CLAUDE.md(수업 규칙 + 「짧은 말 사전」)가 있으면 그 내용으로, 없으면 아래 네 줄로 만든다.
+//    사전이 있어야 수업 카드의 짧은 문장("설치 점검해 줘." 등)이 스킬로 이어진다 — 2026-11-17 리허설은 이 파일을 손으로 넣고 돌렸다.
+//    예외 하나: 지난 설치기가 만든 네 줄 그대로인 파일(고친 흔적 없음)은 사전이 든 판으로 바꾼다.
 //    한국어 줄은 2026-10-09 리허설에서 백그라운드 작업 알림이 여러 번 끼어든 뒤 AI 가 한국어 대표에게 영어로 답한 일 때문이다.
 //    PID 줄은 2026-10-11 리허설 D 에서 미리보기 서버를 끄려던 `taskkill /IM node.exe` 가 이 컴퓨터의 node 전부를 끈 일 때문이다.
 const PROJECT_RULES = [
@@ -281,8 +284,23 @@ const PROJECT_RULES = [
   '- 서버·프로세스는 자기가 띄운 것만 번호(PID)로 끈다. 이름으로 전부 끄는 명령(taskkill /IM · pkill · killall · Stop-Process -Name)은 쓰지 않는다.',
 ]
 const RULE_KEYS = [/한국어/, /스킬[^\n]*이름/, /\.owner\/state\.md/, /PID/]
+const FOUR_LINES = Buffer.from(PROJECT_RULES.join('\n') + '\n', 'utf8')
+const DICT_KEY = /^#{1,6}[ \t]*(?:\d+\.[ \t]*)?짧은 말 사전[ \t]*\r?$/m   // 사전 절의 제목 줄만 센다(본문 속 언급은 세지 않는다)
+// 지침 원본 — 번들의 project/CLAUDE.md 하나를 두 도구(CLAUDE.md·AGENTS.md)가 같이 쓴다. 없으면 네 줄.
+// 읽지 못했거나 비었거나 네 줄 규칙·사전 절이 빠진 파일은 쓰지 않는다(빈 지침으로 덮는 일을 막는다) — 네 줄로 만들고 알린다.
+const GUIDE_SRC = path.join(HERE, 'project', 'CLAUDE.md')
+let guideBody = null   // 사전이 든 판(Buffer). null 이면 네 줄로 만든다
+if (fs.existsSync(GUIDE_SRC)) {
+  let buf = null
+  try { buf = fs.readFileSync(GUIDE_SRC) } catch { buf = null }
+  const text = buf ? buf.toString('utf8') : ''
+  if (text.trim() && RULE_KEYS.every((re) => re.test(text)) && DICT_KEY.test(text)) guideBody = buf
+  else notes.push('번들의 project/CLAUDE.md 를 읽지 못했거나 내용이 온전하지 않아(늘 지킬 네 줄·짧은 말 사전) 프로젝트 지침을 네 줄로만 만들었습니다 — 수업 번들을 다시 받아 설치기를 한 번 더 실행하세요.')
+}
 const guideFiles = [wantClaude ? 'CLAUDE.md' : null, wantCodex ? 'AGENTS.md' : null].filter(Boolean)
-for (const g of guideFiles) add(path.join(root, g), PROJECT_RULES.join('\n') + '\n', '프로젝트 지침', true)
+for (const g of guideFiles) {
+  plan.push({ dst: path.join(root, g), data: guideBody || FOUR_LINES, group: '프로젝트 지침', once: true, upgradeFrom: guideBody ? FOUR_LINES : null })
+}
 
 if (!foundSkills.length && !foundAgents.length && !foundHooks.length) {
   die('이 저장소에 설치할 내용이 없습니다. 저장소를 제대로 내려받았는지 확인하세요.')
@@ -325,7 +343,13 @@ for (const item of plan) {
   const lk = linkInside(item.dst)
   if (lk) { linked.push(`${r} (링크: ${rel(lk) || lk})`); continue }
   if (!fs.existsSync(item.dst)) { item.out = item.dst; continue }
-  if (item.once) { skips.push(r); continue }        // 있으면 그대로 둔다
+  if (item.once) {                                  // 있으면 그대로 둔다
+    // 예외: 지난 설치기가 만든 기본 내용 그대로면(고친 흔적 없음) 새 내용으로 바꾼다 — 프로젝트 지침 네 줄 → 사전이 든 판
+    let curOnce = null
+    try { curOnce = fs.readFileSync(item.dst) } catch { curOnce = null }
+    if (item.upgradeFrom && curOnce && normEq(curOnce, item.upgradeFrom) && !normEq(curOnce, item.data)) { item.out = item.dst; item.kind = 'update'; continue }
+    skips.push(r); continue
+  }
   const cur = fs.readFileSync(item.dst)
   if (cur.equals(item.data)) { skips.push(r); continue }
   if (isText(item.dst) && normEq(cur, item.data)) {
@@ -588,17 +612,29 @@ if (imgCount) console.log(`  디자인 선택창    ${imgCount}개 → .owner/de
 if (foundCourse.length) console.log(`  수업 자료       ${foundCourse.length}개 → course/`)
 console.log(`  상태 문서       .owner/state.md · .owner/progress.json (없을 때만 새로 만듭니다)`)
 console.log(`  보고서 폴더     reports/`)
-if (guideFiles.length) console.log(`  프로젝트 지침   ${guideFiles.join(' · ')} (없을 때만 네 줄로 만듭니다 — 한국어로 답하기 · 스킬 이름대로 · 끝나면 state.md · 자기가 띄운 서버만 PID 로 끄기)`)
-// 이미 있던 지침 파일에 네 줄 중 빠진 것이 있으면 알려만 준다(고치지 않는다)
+if (guideFiles.length) console.log(guideBody
+  ? `  프로젝트 지침   ${guideFiles.join(' · ')} (없을 때만 만듭니다. 지난 설치기가 만든 네 줄 그대로인 파일만 새 판으로 바꿉니다 — 수업 규칙과 「짧은 말 사전」: "설치 점검해 줘." 같은 짧은 말이 스킬로 이어집니다)`
+  : `  프로젝트 지침   ${guideFiles.join(' · ')} (없을 때만 네 줄로 만듭니다 — 한국어로 답하기 · 스킬 이름대로 · 끝나면 state.md · 자기가 띄운 서버만 PID 로 끄기)`)
+// 이미 있던 지침 파일에 네 줄 중 빠진 것·짧은 말 사전이 없으면 알려만 준다(고치지 않는다)
 for (const g of guideFiles) {
+  if (plan.some((it) => it.dst === path.join(root, g) && it.out)) continue   // 이번에 설치기가 만들었거나 바꾼 파일
   let t = null
   try { t = fs.readFileSync(path.join(root, g), 'utf8') } catch { t = null }
-  if (t === null) continue                       // 미리보기라 아직 없다
+  if (t === null) continue                       // 읽을 수 없다
+  if (guideBody && !DICT_KEY.test(t)) {
+    // 사전이 든 판을 붙이면 네 줄도 함께 들어간다 — 안내를 하나로 합친다.
+    console.log('')
+    console.log(`${p}${g} 가 이미 있어 건드리지 않았는데, 그 파일에 「짧은 말 사전」이 없습니다 — 수업 카드의 짧은 문장("설치 점검해 줘." 등)이 스킬로 이어지지 않을 수 있습니다.`)
+    console.log(`  이 파일의 내용을 ${g} 끝에 붙여 넣으세요(늘 지킬 규칙도 함께 들어 있습니다): ${GUIDE_SRC}`)
+    console.log(`  AI에게 이렇게 말해도 됩니다: "방금 받은 수업 번들의 project/CLAUDE.md 내용을 이 폴더의 ${g} 끝에 그대로 붙여 줘."`)
+    continue
+  }
   const miss = PROJECT_RULES.filter((_, i) => !RULE_KEYS[i].test(t))
-  if (!miss.length) continue
-  console.log('')
-  console.log(`${p}${g} 가 이미 있어 건드리지 않았습니다. 아래 줄이 그 파일에 없으면 직접 넣어 주세요:`)
-  miss.forEach((m) => console.log(`  ${m}`))
+  if (miss.length) {
+    console.log('')
+    console.log(`${p}${g} 가 이미 있어 건드리지 않았습니다. 아래 줄이 그 파일에 없으면 직접 넣어 주세요:`)
+    miss.forEach((m) => console.log(`  ${m}`))
+  }
 }
 
 if (registrations.length) {
